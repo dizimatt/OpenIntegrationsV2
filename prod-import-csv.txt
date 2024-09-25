@@ -1,0 +1,1 @@
+"title,description,variants[0].price,variants[0].option1,variants[1].price,variants[1].option1,\n\"test product\",\"test description\", 5.99,\"small\",6.99,\"large\"\n\n\"test product 2\",\"test description 2\", 7.99"

@@ -1,0 +1,35 @@
+html
+  head
+    title= title
+  body
+    h2= 'Welcome to Open Integrations App - shop: ' + shopurl
+    p
+      a(href='/api/shopify/products?shop='+ shopurl) show the shopify product list<br />
+      a(href='/api/products?shop='+ shopurl) view the product list<br />
+      a(href='/api/tiktok/products') view the tiktok product list<br />
+      a(href='/api/lazada/products') view the lazada product list<br />
+    table
+      tr 
+        th(style="border-bottom: 2px solid red;") Shopify
+        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") Shopify Indexed
+        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") tiktok
+        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") lazada
+      tr
+        td 
+          a(href='/api/shopify/products?shop='+ shopurl) show the shopify product list
+        td 
+          a(href='/api/products?shop='+ shopurl) view the product list
+        td 
+          a(href='/api/tiktok/products') view the tiktok product list
+        td 
+          a(href='/api/lazada/products') view the lazada product list
+
+div(id="jquerydiv") testing...
+
+script(src="https://code.jquery.com/jquery-3.5.1.min.js")
+script. 
+  $.get( "/api/tiktok/products", function( data ) {
+    $( "#jquerydiv" ).text( data.products );
+    alert( "Load was performed." + data );
+  });
+ // $('#jquerydiv').text("testing jquery div");

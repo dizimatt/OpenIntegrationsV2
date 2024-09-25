@@ -1,0 +1,31 @@
+openintegrations> db.shopifyApp.find();
+[
+  {
+    _id: ObjectId("66d82e1749284a9908f61565"),
+    APP_NAME: 'OpenIntegrationsV2',
+    SHOPIFY_API_KEY: '',
+    SHOPIFY_API_SECRET_KEY: '',
+    SHOPIFY_SCOPES: 'read_products, write_products, read_orders, write_orders',
+    SHOPIFY_HOSTNAME: '70ed-129-126-8-36.ngrok-free.app'
+  }
+]
+openintegrations> db.lazadaApp.find();
+[
+  {
+    _id: ObjectId("66ecf5fd2f3e9b2ec85a87b2"),
+    APP_NAME: 'OpenIntegrationsV2',
+    LAZADA_APP_KEY: '',
+    LAZADA_APP_SECRET: '',
+    LAZADA_HOSTNAME: '70ed-129-126-8-36.ngrok-free.app'
+  }
+]
+openintegrations> db.tiktokApp.find();
+[
+  {
+    _id: ObjectId("66ea5cf610e20f06f174e6bf"),
+    APP_NAME: 'OpenIntegrationsV2',
+    APP_KEY: '',
+    APP_SECRET: '',
+    REDIRECT_URL: 'fd1b-118-189-67-149.ngrok-free.app/tiktok/auth/callback'
+  }
+]

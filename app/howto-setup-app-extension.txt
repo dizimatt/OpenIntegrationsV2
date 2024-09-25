@@ -1,0 +1,10 @@
+ensure shopify-cli is installed 
+navigate to app folder
+if .toml file doesn't exist...
+$ shopify app config link
+
+$ shopify app generate extension
+still within app folder...
+$ shopify app dev
+
+may need to $ sudo gem install bundler
