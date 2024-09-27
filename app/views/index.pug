@@ -6,18 +6,19 @@ html
     table
       tr 
         th(style="border-bottom: 2px solid red;") Shopify
-        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") Shopify Indexed
         th(style="border-bottom: 2px solid red;border-left: 2px solid red;") tiktok
         th(style="border-bottom: 2px solid red;border-left: 2px solid red;") lazada
       tr
         td
-          a(id="a-shopify-products" href='#') show the shopify product list
+          a(id="a-shopify-products" href='#') products
+          br
+          a(id="a-shopify-reindex-products" href='#') re-index products
+          br
+          a(id="a-shopify-indexed-products" href='#') indexed products
         td(style="border-left: 2px solid red;")
-          a(id="a-shopify-indexed-products" href='#') view the product list
+          a(id="a-tiktok-products" href='#') products
         td(style="border-left: 2px solid red;")
-          a(id="a-tiktok-products" href='#') view the tiktok product list
-        td(style="border-left: 2px solid red;")
-          a(id="a-lazada-products" href='#') view the lazada product list
+          a(id="a-lazada-products" href='#') products
     br
     h2 output console
     hr
@@ -33,6 +34,9 @@ script.
     });
     $("#a-shopify-indexed-products").click( function(e) {
       fetchShopifyIndexedProducts("#{shopurl}");
+    });
+    $("#a-shopify-reindex-products").click( function(e) {
+      reindexShopifyProducts("#{shopurl}");
     });
     $("#a-tiktok-products").click( function(e) {
       fetchTiktokProducts("#{shopurl}");
@@ -52,6 +56,12 @@ script.
     });
   };
 
+  function reindexShopifyProducts(shopurl){
+    console.log("reindexShopifyProducts");
+    $.get( "/api/shopify/products/index?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>ReIndexed Shopify Products</H2>");
+    });
+  };
   function fetchShopifyIndexedProducts(shopurl){
     console.log("fetchShopifyIndexedProducts");
     $.get( "/api/products?shop="+shopurl, function( data ) {
