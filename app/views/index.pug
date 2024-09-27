@@ -93,7 +93,6 @@ script.
   function fetchLazadaProducts(shopurl){
     console.log("fetchLazadaProducts...");
     $.get( "/api/lazada/products", function( data ) {
-      console.log(JSON.stringify(data,null,2));
       $( "#jquerydiv" ).html("<H2>Lazada Products</H2>");
       data.products[0].forEach(product => {
         $( "#jquerydiv" ).append("<p>name:" + product.attributes.name + "</p>");
