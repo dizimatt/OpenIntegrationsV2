@@ -19,6 +19,10 @@ html
           a(id="a-tiktok-products" href='#') products
         td(style="border-left: 2px solid red;")
           a(id="a-lazada-products" href='#') products
+          br
+          a(id="a-lazada-reindex-products" href='#') re-index products
+          br
+          a(id="a-lazada-indexed-products" href='#') Indexed products
     br
     h2 output console
     hr
@@ -43,6 +47,12 @@ script.
     });
     $("#a-lazada-products").click( function(e) {
       fetchLazadaProducts("#{shopurl}");
+    });
+    $("#a-lazada-indexed-products").click( function(e) {
+      fetchLazadaIndexedProducts("#{shopurl}");
+    });
+    $("#a-lazada-reindex-products").click( function(e) {
+      reindexLazadaProducts("#{shopurl}");
     });
   });
 
@@ -81,11 +91,27 @@ script.
     });
   };
   function fetchLazadaProducts(shopurl){
-    console.log("fetchLazadaProducts");
+    console.log("fetchLazadaProducts...");
     $.get( "/api/lazada/products", function( data ) {
+      console.log(JSON.stringify(data,null,2));
       $( "#jquerydiv" ).html("<H2>Lazada Products</H2>");
+      data.products[0].forEach(product => {
+        $( "#jquerydiv" ).append("<p>name:" + product.attributes.name + "</p>");
+      });
+    });
+  };
+  function reindexLazadaProducts(shopurl){
+    console.log("reindexLazadaProducts");
+    $.get( "/api/lazada/products/index?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>ReIndexed Lazada Products</H2>");
+    });
+  };
+  function fetchLazadaIndexedProducts(shopurl){
+    console.log("fetchLazadaIndexedProducts...");
+    $.get( "/api/lazada/indexed_products?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>Lazada Indexed Products</H2>");
       data.products.forEach(product => {
-        $( "#jquerydiv" ).append("<p>name:" + product[0].attributes.name + "</p>");
+        $( "#jquerydiv" ).append("<p>name:" + product.attributes.name + "</p>");
       });
     });
   };

@@ -12,7 +12,7 @@ import {apiShopifyProducts, apiShopifyProductsIndex, apiShopifyProductsImport, a
   apiShopifyGqlBatchDelete,
   apiShopifyMandatoryCustomersDataRequest, apiShopifyMandatoryShopRedact, apiShopifyMandatoryCustomersRedact} 
   from './routes/shopify.js';
-import {lazadaAuthCallback,apiLazadaProducts} from './routes/lazada.js';
+import {lazadaAuthCallback,apiLazadaProducts,apiLazadaIndexedProducts, apiLazadaProductsIndex} from './routes/lazada.js';
 import {tiktokAuthCallback,apiTiktokProducts} from './routes/tiktok.js';
 
 import { createApp } from '@shopify/app-bridge';
@@ -284,6 +284,12 @@ app.get('/api/tiktok/products', async (req, res) => {
 
 app.get('/api/lazada/products', async (req, res) => {
   apiLazadaProducts(req, res, dbClient);
+});
+app.get('/api/lazada/products/index', async (req, res) => {
+  apiLazadaProductsIndex(req, res, dbClient);
+});
+app.get('/api/lazada/indexed_products', async (req, res) => {
+  apiLazadaIndexedProducts(req,res,dbClient);
 });
 
 app.use('/api/login', async (req, res) => {

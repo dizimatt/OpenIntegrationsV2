@@ -151,4 +151,77 @@ export async function lazadaAuthCallback(req, res, _dbClient) {
   dbClient = _dbClient;
   res.send(await getLazadaProducts(req,_dbClient));
   };
+  export async function apiLazadaIndexedProducts(req, res, _dbClient) {
+    dbClient = _dbClient;
+    const shopURL = req.query.shop;
+//    console.log("headers: %o",req.headers);
+
+    //  const client = new MongoClient(process.env.MONGO_CLIENT_URL);
+      const products = [];
+      try{
+    //    await client.connect();
+    
+        const db = dbClient.db('openintegrations');
+    
+        var prodQuery = {}
+        if(shopURL){
+          prodQuery = {shopURL:shopURL};
+        }
+       
+        const productsCursor = await db.collection('lazadaProducts').find(prodQuery);
+        for await (const product of productsCursor){
+            products.push(product);
+        }
+      } catch (err) {
+        console.log("failed to collect all products from mongodb! err: %o",err);
+      }
+    //  res.setHeader('content-type', 'Application/Liquid');
+    //  res.set('content-type','Application/Liquid');
+
+      res.json({products});
+    
+};
+
+
+  export async function apiLazadaProductsIndex(req, res, _dbClient) {
+    console.log("about to index lazada products....");
+    dbClient = _dbClient;
+    const shopURL = req.query.shop;
+    // get a all products via GET RESTful API call
+  
+    try{
+  
+      const productsResults = await getLazadaProducts(req, _dbClient);
+  
+      const finalProducts = [];
+      if (productsResults.products){
+      
+        const db = dbClient.db('openintegrations');
+  
+        db.collection('lazadaProducts').deleteMany({shopURL: shopURL});
+  
+        //productsResults.body.products.
+        productsResults.products[0].forEach(product => { 
+
+          //now write the same product back to mogodb
+          try{
+            Object.assign(product, {shopURL: shopURL});
+            const productsCursor = db.collection('lazadaProducts').insertOne(product);
+//            .catch((err) => {
+//              res.send({mongoerror: err});
+//            });
+          }catch(err){
+            console.log("error posting to mongodb: %o",err);
+          }
+          finalProducts.push(product[0]);
+      
+        });
+      }
+      res.send(finalProducts);
+    } catch(err) {
+      console.log(`error  in callingthe shopify client api: ${err.message}`);
+      res.send({failed:true, error: err.message});
+    }
+  }
+
   
