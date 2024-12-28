@@ -1,4 +1,6 @@
+
 import '@shopify/shopify-api/adapters/node';
+import OpenAI from "openai";
 import express, { json, query } from 'express';
 import {MongoClient} from 'mongodb';
 import {HMAC, AuthError} from "hmac-auth-express";
@@ -19,7 +21,7 @@ import { createApp } from '@shopify/app-bridge';
 import { ResourcePicker }  from '@shopify/app-bridge/actions/index.js';
 
 import { createHmac } from 'crypto';
-import fs from 'fs';
+import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
 const app_version = "1.1.2";
@@ -182,7 +184,44 @@ app.get('/api/shopify/gql/batch/delete', (req, res) => {
 
 app.get('/pug', (req, res) => {
   res.render('pugindex', { title: 'Hey', message: 'Hello there!' })
-})
+});
+
+app.get('/openai/test', async (req, res) => {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
+  var assistantID = null;
+  const returnOBJ = {};
+  try{
+    //    console.log("vectorStoreId: %s", vectorStoreId);
+      const name = "Information Assistant";
+      const instructions = "You are an information assistant. provide advice based on vector files provided. Please Address me as Matt";
+  
+      const assistant = await openai.beta.assistants.create({
+        name: name,
+        instructions: instructions,
+        tools: [{ type: "file_search" }] ,
+        model: "gpt-4o"
+      });
+      assistantID = assistant.id;
+      returnOBJ.assistantID = assistant.id;
+  
+    } catch (err) {
+      console.log("failed to call createAssistant!, %o", err);
+      returnOBJ.error = err;
+    };
+    if (assistantID){
+      try{
+        await openai.beta.assistants.del(assistantID);
+      } catch (err) {
+        console.log("failed to call deleteAssistant!, %o", err);
+        returnOBJ.error = err;
+      };
+    }
+  res.json({
+    returnOBJ
+  });
+});
 
 app.get('/',(req, res) => {
   const shopURL = req.query.shop;
