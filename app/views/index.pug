@@ -27,6 +27,8 @@ html
         td(style="border-left: 2px solid red;")
           a(id="a-openai-testmessage" href='#') test message
           br
+          a(id="a-openai-removeallassistants" href='#') test message
+          br
     br
     h2 output console
     hr
@@ -58,7 +60,28 @@ script.
     $("#a-lazada-reindex-products").click( function(e) {
       reindexLazadaProducts("#{shopurl}");
     });
+    $("#a-openai-testmessage").click( function(e) {
+      openAPITestMessage("#{shopurl}");
+    });
+    $("#a-openai-removeallassistants").click( function(e) {
+      openAPIRemoveAllAssistants("#{shopurl}");
+    });
   });
+
+  function openAPITestMessage(shopurl){
+    console.log("openAPITestMessage");
+    $.get( "/api/openai/test?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>Open API Test</H2>");
+      $( "#jquerydiv" ).append("<p>" + JSON.stringify(data) + "</p>");
+    });
+  };
+  function openAPIRemoveAllAssistants(shopurl){
+    console.log("fetchShopifyProducts");
+    $.get( "/api/openai/removeallassistants?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>Open API Test</H2>");
+      $( "#jquerydiv" ).append("<p>" + JSON.stringify(data) + "</p>");
+    });
+  };
 
   function fetchShopifyProducts(shopurl){
     console.log("fetchShopifyProducts");
