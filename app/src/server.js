@@ -1,6 +1,5 @@
 
 import '@shopify/shopify-api/adapters/node';
-import OpenAI from "openai";
 import express, { json, query } from 'express';
 import {MongoClient} from 'mongodb';
 import {HMAC, AuthError} from "hmac-auth-express";
@@ -24,6 +23,7 @@ import { createHmac } from 'crypto';
 import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
+import { initOpenAI, apiOpenAITest, apiOpenAIRemoveAllAssistants} from './routes/openai.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";
@@ -186,41 +186,22 @@ app.get('/pug', (req, res) => {
   res.render('pugindex', { title: 'Hey', message: 'Hello there!' })
 });
 
-app.get('/openai/test', async (req, res) => {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-  });
-  var assistantID = null;
-  const returnOBJ = {};
-  try{
-    //    console.log("vectorStoreId: %s", vectorStoreId);
-      const name = "Information Assistant";
-      const instructions = "You are an information assistant. provide advice based on vector files provided. Please Address me as Matt";
-  
-      const assistant = await openai.beta.assistants.create({
-        name: name,
-        instructions: instructions,
-        tools: [{ type: "file_search" }] ,
-        model: "gpt-4o"
-      });
-      assistantID = assistant.id;
-      returnOBJ.assistantID = assistant.id;
-  
-    } catch (err) {
-      console.log("failed to call createAssistant!, %o", err);
-      returnOBJ.error = err;
-    };
-    if (assistantID){
-      try{
-        await openai.beta.assistants.del(assistantID);
-      } catch (err) {
-        console.log("failed to call deleteAssistant!, %o", err);
-        returnOBJ.error = err;
-      };
-    }
-  res.json({
-    returnOBJ
-  });
+app.get('/api/openai/test', async (req, res) => {
+  console.log("route: /api/openai/test");
+  console.log("about to call initOpenAI");
+  initOpenAI();
+  console.log("about to call apiOpenAITest");
+//  apiOpenAITest(req, res);
+  apiOpenAITest(req, res);
+});
+
+app.get('/api/openai/removeallassistants', async (req, res) => {
+  console.log("route: /api/openai/test");
+  console.log("about to call initOpenAI");
+  initOpenAI();
+  console.log("about to call apiOpenAIRemoveAllAssistants");
+//  apiOpenAITest(req, res);
+  apiOpenAIRemoveAllAssistants(req, res);
 });
 
 app.get('/',(req, res) => {
