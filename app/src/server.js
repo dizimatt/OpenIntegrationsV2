@@ -23,7 +23,7 @@ import { createHmac } from 'crypto';
 import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
-import { initOpenAI, apiOpenAITest, apiOpenAIRemoveAllAssistants} from './routes/openai.js';
+import { initOpenAI,  createMainAssistant, apiOpenAIRemoveAllAssistants} from './routes/openai.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";
@@ -76,6 +76,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/', (req, res, next) => {
+  /*
   const config = {
     // The client ID provided for your application in the Partner Dashboard.
     apiKey: "5d9fed8825579b4e1633694ee110ceaa",
@@ -84,6 +85,7 @@ app.use('/', (req, res, next) => {
     forceRedirect: true
   };
   const shopifyapp = createApp(config);
+  */
   next();
 });
 
@@ -186,21 +188,8 @@ app.get('/pug', (req, res) => {
   res.render('pugindex', { title: 'Hey', message: 'Hello there!' })
 });
 
-app.get('/api/openai/test', async (req, res) => {
-  console.log("route: /api/openai/test");
-  console.log("about to call initOpenAI");
-  initOpenAI();
-  console.log("about to call apiOpenAITest");
-//  apiOpenAITest(req, res);
-  apiOpenAITest(req, res);
-});
-
 app.get('/api/openai/removeallassistants', async (req, res) => {
-  console.log("route: /api/openai/test");
-  console.log("about to call initOpenAI");
-  initOpenAI();
-  console.log("about to call apiOpenAIRemoveAllAssistants");
-//  apiOpenAITest(req, res);
+  console.log("route: /api/openai/removeallassistants");
   apiOpenAIRemoveAllAssistants(req, res);
 });
 
@@ -328,6 +317,10 @@ app.use('/api/shopify/mandatory/shop/redact', async (req, res) => {
 
 app.listen(8000, () => {
     console.log('Server is listening on port 8000');
+
+    //initialising ai - so far the one constant process to be started upon startup
+    initOpenAI();
+    createMainAssistant();    
 });
 
 // Creating object of key and certificate 
