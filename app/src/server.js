@@ -23,7 +23,7 @@ import { createHmac } from 'crypto';
 import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
-import { initOpenAI,  createMainAssistant, apiOpenAIRemoveAllAssistants} from './routes/openai.js';
+import { initOpenAI,  createMainAssistant, apiOpenAIRemoveAllAssistants, apiOpenAISendMessage} from './routes/openai.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";
@@ -193,6 +193,15 @@ app.get('/api/openai/removeallassistants', async (req, res) => {
   apiOpenAIRemoveAllAssistants(req, res);
 });
 
+app.get('/api/openai/sendmessage', async (req, res) => {
+  console.log("route: GET /api/openai/sendmessage");
+  apiOpenAISendMessage(req, res);
+});
+app.post('/api/openai/sendmessage', async (req, res) => {
+  console.log("route: POST /api/openai/sendmessage");
+  apiOpenAISendMessage(req, res);
+});
+
 app.get('/',(req, res) => {
   const shopURL = req.query.shop;
   res.render('index', { 
@@ -320,7 +329,7 @@ app.listen(8000, () => {
 
     //initialising ai - so far the one constant process to be started upon startup
     initOpenAI();
-    createMainAssistant();    
+//    createMainAssistant();    
 });
 
 // Creating object of key and certificate 

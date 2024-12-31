@@ -28,13 +28,22 @@ html
           a(id="a-openai-removeallassistants" href='#') close all assistants
           br
     br
+    h3 Ask ChatGPT a question:
+    form(id="form-openai" action="#") 
+      textarea(id="textarea-openai-message", cols=40, rows=5)
+      br
+      input(id="btn-openai-send" type="button", value="Send")
+      br
+      textarea(id="textarea-openai-response", cols=40, rows=5)
+      br
+    br
     h2 output console
     hr
 
 div(id="jquerydiv")
 
 script(src="https://code.jquery.com/jquery-3.5.1.min.js")
-script. 
+script.
 
   $( document ).ready(function() {
     $("#a-shopify-products").click( function(e) {
@@ -58,22 +67,23 @@ script.
     $("#a-lazada-reindex-products").click( function(e) {
       reindexLazadaProducts("#{shopurl}");
     });
-    $("#a-openai-testmessage").click( function(e) {
-      openAPITestMessage("#{shopurl}");
-    });
     $("#a-openai-removeallassistants").click( function(e) {
-      openAPIRemoveAllAssistants("#{shopurl}");
+      openAIRemoveAllAssistants("#{shopurl}");
+    });
+    $("#btn-openai-send").click( function(e) {
+      let openai_message = $("#textarea-openai-message").val();
+      openAISendMessage("#{shopurl}",$("#textarea-openai-message").val());
     });
   });
 
-  function openAPITestMessage(shopurl){
-    console.log("openAPITestMessage");
-    $.get( "/api/openai/test?shop="+shopurl, function( data ) {
-      $( "#jquerydiv" ).html("<H2>Open API Test</H2>");
-      $( "#jquerydiv" ).append("<p>" + JSON.stringify(data) + "</p>");
+  function openAISendMessage(shopurl,message){
+    console.log("openAISendMessage");
+    $.get( "/api/openai/sendmessage?shop="+shopurl, function( data ) {
+      $( "#textarea-openai-response" ).val($( "#textarea-openai-response" ).val() + "\nassistant>");
+      $( "#textarea-openai-response" ).val($( "#textarea-openai-response" ).val() + "\n" + JSON.stringify(data));
     });
   };
-  function openAPIRemoveAllAssistants(shopurl){
+  function openAIRemoveAllAssistants(shopurl){
     console.log("fetchShopifyProducts");
     $.get( "/api/openai/removeallassistants?shop="+shopurl, function( data ) {
       $( "#jquerydiv" ).html("<H2>Open API Test</H2>");

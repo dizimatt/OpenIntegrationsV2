@@ -48,6 +48,17 @@ export async function apiOpenAIRemoveAllAssistants(req, res){
     return true;
 }
 
+export async function apiOpenAISendMessage(req, res){
+    console.log("apiOpenAISendMessage: req body: %o",req.body);
+    res.json({
+        message: {
+            data: "this is a dummy message!"
+        }
+    });
+
+//    res.sendStatus(202);
+}
+
 export async function createMainAssistant(){
     await OpenAIRemoveAllAssistants();
     console.log("createMainAssistant: creating main assistant, will be used for future threads");
