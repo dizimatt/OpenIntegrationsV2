@@ -71,18 +71,32 @@ script.
       openAIRemoveAllAssistants("#{shopurl}");
     });
     $("#btn-openai-send").click( function(e) {
-      let openai_message = $("#textarea-openai-message").val();
-      openAISendMessage("#{shopurl}",$("#textarea-openai-message").val());
+      e.preventDefault();
+      const openai_message = $("#textarea-openai-message").val();
+      openAISendMessage(openai_message);
     });
   });
 
-  function openAISendMessage(shopurl,message){
-    console.log("openAISendMessage");
-    $.get( "/api/openai/sendmessage?shop="+shopurl, function( data ) {
-      $( "#textarea-openai-response" ).val($( "#textarea-openai-response" ).val() + "\nassistant>");
-      $( "#textarea-openai-response" ).val($( "#textarea-openai-response" ).val() + "\n" + JSON.stringify(data));
+  function openAISendMessage(message){
+    
+    console.log("openAISendMessage, question:" + message);
+
+    var data = {
+        question: message
+    };
+
+    $.ajax({
+        type: "POST",
+        url: "/api/openai/sendmessage",
+        data: data,
+        success: function (data) {
+            console.log(data);
+            $( "#textarea-openai-response" ).val(JSON.stringify(data.content.message_content));
+        },
+        dataType: "json"
     });
   };
+
   function openAIRemoveAllAssistants(shopurl){
     console.log("fetchShopifyProducts");
     $.get( "/api/openai/removeallassistants?shop="+shopurl, function( data ) {

@@ -43,8 +43,8 @@ async function connectDB(){
 const app = express();
 app.set('view engine', 'pug');
 
-//app.use(bodyParser.urlencoded({ extended: false })); 
-//app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false })); 
+app.use(bodyParser.json());
 
 
 function rawBody(req, res, next) {
@@ -62,6 +62,7 @@ function rawBody(req, res, next) {
   }
 }
 app.use(rawBody);
+
 
   //app.use(express.bodyParser());
 //  app.use(express.methodOverride());
@@ -192,11 +193,12 @@ app.get('/api/openai/removeallassistants', async (req, res) => {
   console.log("route: /api/openai/removeallassistants");
   apiOpenAIRemoveAllAssistants(req, res);
 });
-
+/*
 app.get('/api/openai/sendmessage', async (req, res) => {
   console.log("route: GET /api/openai/sendmessage");
   apiOpenAISendMessage(req, res);
 });
+*/
 app.post('/api/openai/sendmessage', async (req, res) => {
   console.log("route: POST /api/openai/sendmessage");
   apiOpenAISendMessage(req, res);
@@ -329,7 +331,7 @@ app.listen(8000, () => {
 
     //initialising ai - so far the one constant process to be started upon startup
     initOpenAI();
-//    createMainAssistant();    
+    createMainAssistant();
 });
 
 // Creating object of key and certificate 
