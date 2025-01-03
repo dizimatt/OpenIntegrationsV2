@@ -1,6 +1,7 @@
 
 import '@shopify/shopify-api/adapters/node';
 import express, { json, query } from 'express';
+import expressWs from 'express-ws';
 import {MongoClient} from 'mongodb';
 import {HMAC, AuthError} from "hmac-auth-express";
 import dotenv from 'dotenv';
@@ -23,7 +24,7 @@ import { createHmac } from 'crypto';
 import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
-import { initOpenAI,  createMainAssistant, apiOpenAIRemoveAllAssistants, apiOpenAISendMessage} from './routes/openai.js';
+import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessage, apiOpenAISendMessageWS} from './routes/openai.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";
@@ -39,8 +40,8 @@ async function connectDB(){
   }    
 };
 
-
-const app = express();
+const {app,getWss,applyTo} = expressWs(express());
+//const app = express();
 app.set('view engine', 'pug');
 
 app.use(bodyParser.urlencoded({ extended: false })); 
@@ -189,9 +190,9 @@ app.get('/pug', (req, res) => {
   res.render('pugindex', { title: 'Hey', message: 'Hello there!' })
 });
 
-app.get('/api/openai/removeallassistants', async (req, res) => {
+app.get('/api/openai/removeassistant', async (req, res) => {
   console.log("route: /api/openai/removeallassistants");
-  apiOpenAIRemoveAllAssistants(req, res);
+  apiOpenAIRemoveMainAssistant(req, res, dbClient);
 });
 /*
 app.get('/api/openai/sendmessage', async (req, res) => {
@@ -202,6 +203,16 @@ app.get('/api/openai/sendmessage', async (req, res) => {
 app.post('/api/openai/sendmessage', async (req, res) => {
   console.log("route: POST /api/openai/sendmessage");
   apiOpenAISendMessage(req, res);
+});
+app.ws('/api/openai/send-message-ws', async function(ws,req){
+  ws.on('message', async function(msg) {
+    const msg_obj = JSON.parse(msg);
+    try{
+      const returned = await apiOpenAISendMessageWS(ws, msg_obj);
+    }catch(e){
+      console.log("failed to call sendMessageStreaming!, %o", e);
+    }
+  });
 });
 
 app.get('/',(req, res) => {

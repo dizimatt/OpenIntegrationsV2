@@ -79,12 +79,11 @@ export async function apiOpenAISendMessage(req, res){
 //    res.sendStatus(202);
 }
 
-async function OpenAICreateMainThread(){
-    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
-    await client.connect();
-
-    //    const db = dbClient.db('openintegrations');
-    const db = client.db('openintegrations');
+async function OpenAICreateMainThread(dbClient){
+//    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
+//    await client.connect();
+//    const db = client.db('openintegrations');
+    const db = dbClient.db('openintegrations');
 
     var myReturn = {}
     var threadsQuery = {}
@@ -110,12 +109,11 @@ async function OpenAICreateMainThread(){
     return myReturn;
 }
 
-async function OpenAIRemoveAllAssistants(){
-    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
-    await client.connect();
-
-//    const db = dbClient.db('openintegrations');
-    const db = client.db('openintegrations');
+async function OpenAIRemoveMainAssistant(dbClient){
+//    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
+//    await client.connect();
+//    const db = client.db('openintegrations');
+    const db = dbClient.db('openintegrations');
 
     const returnOBJ = {
         data: {
@@ -150,9 +148,9 @@ async function OpenAIRemoveAllAssistants(){
     }
     return returnOBJ;
 }
-export async function apiOpenAIRemoveAllAssistants(req, res){
+export async function apiOpenAIRemoveMainAssistant(req, res, dbClient){
     try{
-        const returnOBJ = await OpenAIRemoveAllAssistants();
+        const returnOBJ = await OpenAIRemoveMainAssistant(dbClient);
         res.json({
             returnOBJ
         });
@@ -162,11 +160,11 @@ export async function apiOpenAIRemoveAllAssistants(req, res){
     return true;
 }
 export async function createMainAssistant(dbClient){
-    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
-    await client.connect();
+//    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
+//    await client.connect();
+//    const db = client.db('openintegrations');
 
-//    const db = dbClient.db('openintegrations');
-    const db = client.db('openintegrations');
+    const db = dbClient.db('openintegrations');
 
     console.log("createMainAssistant: fetching/creating main assistant, will be used for future threads");
     var assistantsQuery = {}
@@ -199,7 +197,96 @@ export async function createMainAssistant(dbClient){
         };
     }
 
-    const aIThreadObj = await OpenAICreateMainThread();
+    const aIThreadObj = await OpenAICreateMainThread(dbClient);
 return true;        
 
 }
+
+export async function apiOpenAISendMessageWS(ws, msg_obj) {
+    try{
+      const question = msg_obj.question;
+  
+      // We use the stream SDK helper to create a run with
+      // streaming. The SDK provides helpful event listeners to handle 
+      // the streamed response.
+      const message = await openai.beta.threads.messages.create(
+        aiThreadID,
+        {
+          role: "user",
+          content: question
+        }
+      );
+        
+      let run = openai.beta.threads.runs.stream(aiThreadID, {
+        assistant_id: aiAssistantID
+      })
+      .on('textCreated', (text) => {
+        ws.send('\nassistant > ');
+      })
+      .on('textDelta', (textDelta, snapshot) => {
+        ws.send(textDelta.value);
+      })
+      .on('toolCallCreated', (toolCall) => {
+  //      console.log(`\nassistant > ${toolCall.type}\n\n`);
+        ws.send(`\nassistant > ${toolCall.type}\n\n`);
+      })
+      .on('toolCallDelta', (toolCallDelta, snapshot) => {
+        if (toolCallDelta.type === 'code_interpreter') {
+          if (toolCallDelta.code_interpreter.input) {
+  //          console.log(toolCallDelta.code_interpreter.input);
+            ws.send(toolCallDelta.code_interpreter.input);
+          }
+          if (toolCallDelta.code_interpreter.outputs) {
+            ws.send("output >:");
+            toolCallDelta.code_interpreter.outputs.forEach(output => {
+              if (output.type === "logs") {
+                ws.send(`${output.logs}`);
+              }
+            });
+          }
+        }
+        console.log(`toolCallDelta.type:${toolCallDelta.type}`);
+      })
+      .on('textDone', (content) => {
+  //      console.log("<aitextdone />");
+        ws.send("<aitextdone />");
+      })
+      .on('messageDone', async (event) => {
+        /*
+        if (event.content[0].type === "text") {
+          const { text } = event.content[0];
+          const { annotations } = text;
+          const citations = [];
+      
+          let index = 0;
+          for (let annotation of annotations) {
+            text.value = text.value.replace(annotation.text, "[" + index + "]");
+            const { file_citation } = annotation;
+            if (file_citation) {
+              const citedFile = await openai.files.retrieve(file_citation.file_id);
+              citations.push("[" + index + "]" + citedFile.filename);
+            }
+            index++;
+          }
+      
+          console.log(text.value);  
+          console.log(citations.join("\n"));
+        }
+        */
+      });
+      return {
+        content:{
+          run_status:run.status,
+          message_content:"currently streaming the results to the server logs"
+        }
+      };
+    
+  
+    } catch (err) {
+      console.log("failed to call sendMessageWS!, %o", err);
+      return "error in sending the message: " + err;
+    };
+  
+  
+  }
+  
