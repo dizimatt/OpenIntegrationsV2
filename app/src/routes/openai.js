@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import {MongoClient} from 'mongodb';
 
 var openai = null;
 var aiAssistantID = null;
@@ -78,50 +79,74 @@ export async function apiOpenAISendMessage(req, res){
 //    res.sendStatus(202);
 }
 
-async function OpenAIRemoveMainThread(){
-    if (aiThreadID != null){
-        try{
-            await openai.beta.threads.del(aiThreadID);
-        } catch (err) {
-            console.log("OpenAIRemoveMainThread: failed to delete main thread!, %o", err);
-        }
-        aiThreadID = null;
-        return true;
-    }
-}
 async function OpenAICreateMainThread(){
-    try{
-        const myThread = await openai.beta.threads.create();
-        aiThreadID = myThread.id;
-    } catch (err) {
-        console.log("OpenAICreateMainThread: failed to create main thread!, %o", err);
+    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
+    await client.connect();
+
+    //    const db = dbClient.db('openintegrations');
+    const db = client.db('openintegrations');
+
+    var myReturn = {}
+    var threadsQuery = {}
+
+    const aIThread = await db.collection('threads').findOne(threadsQuery);
+    if (aIThread){
+        aiThreadID = aIThread.id;
+    } else {
+        try{
+            const myThread = await openai.beta.threads.create();
+            aiThreadID = myThread.id;
+            try{
+                db.collection('threads').insertOne(myThread);
+            } catch (err) {
+                console.log("failed to insert aithread object into collection!, %o", err);
+            }
+            myReturn = myThread;
+        } catch (err) {
+            console.log("OpenAICreateMainThread: failed to create main thread!, %o", err);
+        }
     }
 
-    return true;
+    return myReturn;
 }
 
 async function OpenAIRemoveAllAssistants(){
+    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
+    await client.connect();
+
+//    const db = dbClient.db('openintegrations');
+    const db = client.db('openintegrations');
+
     const returnOBJ = {
         data: {
-            assistants_list: [],
-            assistants_deleted: false
+            assistant_id: null,
+            thread_id: null,
+            assistant_deleted: false,
+            thread_deleted: false
         }
     };
 
-    try{
-        const assistants_list = await openai.beta.assistants.list();
-        returnOBJ.data.assistants_list = assistants_list.data;
-
-        if (assistants_list.data.length != 0){
-            for (const assistant of assistants_list.data) {
-                await openai.beta.assistants.del(assistant.id);
-            }
+    if (aiAssistantID != null){
+        try{
+            await openai.beta.assistants.del(aiAssistantID);
+            await db.collection('assistants').deleteOne({id: aiAssistantID});
+            returnOBJ.data.assistant_id = aiAssistantID;
+            returnOBJ.data.assistants_deleted = true;
+            aiAssistantID = null;
+        } catch (err) {
+            console.log("OpenAIRemoveAllAssistants: failed to delete main Assistant (id: %s) from mongodb!, %o", aiThreadID, err);
         }
-        returnOBJ.data.assistants_deleted = true;
-        await OpenAIRemoveMainThread();
-
-    } catch (err) {
-        console.log("OpenAIRemoveAllAssistants: failed to delete all Assistants!, %o", err);
+    }
+    if (aiThreadID != null){
+        try{
+            await db.collection('threads').deleteOne({id: aiThreadID});
+            await openai.beta.threads.del(aiThreadID);
+            returnOBJ.data.thread_id = aiThreadID;
+            returnOBJ.data.thread_deleted = true;
+            aiThreadID = null;
+        } catch (err) {
+            console.log("OpenAIRemoveAllAssistants: failed to delete main thread (id: %s)!, %o",aiThreadID, err);
+        }
     }
     return returnOBJ;
 }
@@ -136,12 +161,21 @@ export async function apiOpenAIRemoveAllAssistants(req, res){
     };
     return true;
 }
-export async function createMainAssistant(){
-    await OpenAIRemoveAllAssistants();
-    await OpenAICreateMainThread();
-    console.log("createMainAssistant: creating main assistant, will be used for future threads");
-    try{
-        //    console.log("vectorStoreId: %s", vectorStoreId);
+export async function createMainAssistant(dbClient){
+    const client = new MongoClient(process.env.MONGO_CLIENT_URL);
+    await client.connect();
+
+//    const db = dbClient.db('openintegrations');
+    const db = client.db('openintegrations');
+
+    console.log("createMainAssistant: fetching/creating main assistant, will be used for future threads");
+    var assistantsQuery = {}
+    const aIAssistant = await db.collection('assistants').findOne(assistantsQuery);
+    if (aIAssistant){
+        aiAssistantID = aIAssistant.id;
+    } else {
+        try{
+            //    console.log("vectorStoreId: %s", vectorStoreId);
             const name = "Information Assistant";
             const instructions = "You are an information assistant. provide advice based on vector files provided.";
         
@@ -152,10 +186,17 @@ export async function createMainAssistant(){
                 model: "gpt-4o"
             });
             aiAssistantID = assistant.id;
-        
+            try{
+                db.collection('assistants').insertOne(assistant);            
+            } catch (err) {
+                console.log("failed to insert assistant object into collection!, %o", err);                
+            }
         } catch (err) {
             console.log("failed to execute createMainAssistant!, %o", err);
         };
-        return true;        
+    }
+
+    const aIThreadObj = await OpenAICreateMainThread();
+return true;        
 
 }

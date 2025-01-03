@@ -147,7 +147,7 @@ app.use("/api/sec",(req, res, next) => {
 
 
   // this is a fixed secret (same app secret shared amongst other stores) - so it's safe to place here
-  const hmac = createHmac('sha256','a4f0fa2eaab7c9676b95e2b35eab4d97');
+  const hmac = createHmac('sha256', process.env.SHOPIFY_APP_SECRET); // 'a4f0fa2eaab7c9676b95e2b35eab4d97');
   hmac.update(path);
   const digest = hmac.digest().toString('hex');
 
@@ -331,7 +331,7 @@ app.listen(8000, () => {
 
     //initialising ai - so far the one constant process to be started upon startup
     initOpenAI();
-    createMainAssistant();
+    createMainAssistant(dbClient);
 });
 
 // Creating object of key and certificate 
