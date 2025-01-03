@@ -183,7 +183,10 @@ export async function createMainAssistant(dbClient){
                 name: name,
                 instructions: instructions,
                 tools: [{ type: "file_search" }] ,
-                model: "gpt-4o"
+                model: "gpt-4o-mini" /*,
+                response_format: { 
+                    "type": "json_object" 
+                }*/
             });
             aiAssistantID = assistant.id;
             try{
