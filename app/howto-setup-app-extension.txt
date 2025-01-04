@@ -6,5 +6,7 @@ $ shopify app config link
 $ shopify app generate extension
 still within app folder...
 $ shopify app dev
+Type of extension?
+✔  Theme app extension
 
 may need to $ sudo gem install bundler
