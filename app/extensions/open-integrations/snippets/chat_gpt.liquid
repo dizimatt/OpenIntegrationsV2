@@ -1,47 +1,44 @@
-<h1>testing Chat GPT for Open Integrations app extension</h1>
-<span id="span-chatgpt-response">
+<h1>Please Ask Our Information Assistant about our products</h1>
+ <a id="a-toggle-chatgpt" href="#">view the assistant</a><br/>
+<div id="div-chatgpt-container" style="display:none;">
+  <table id="table-openai">
+    <tr>
+      <th>
+        <h3>Ask ChatGPT a question</h3>
+      </th>
+      <th>
+        <h3>ChatGPT Response</h3>
+      </th>
+    </tr>
+    <tr>
+      <td>
+        <form id="form-openai" action="#">
+          <textarea id="textarea-openai-message" cols=40 rows=5></textarea>
+          <br />
+          <input id="btn-openai-send" type="button" value="Send" />
+        </form>
+      </td>
+      <td>
+        <textarea id="textarea-openai-response" cols=40, rows=5></textarea>
+      </td>
+    </tr>
+  </table>
 
-    <h3>Ask ChatGPT a question:</h3>
-    <form id="form-openai" action="#">
-      <textarea id="textarea-openai-message" cols=40 rows=5></textarea>
-      <br />
-      <input id="btn-openai-send" type="button" value="Send" />
-      <br />
-      <textarea id="textarea-openai-response" cols=40, rows=5></textarea>
-      <br />
-    </form>
-    <br />
-
-</span>
+</div>
 <!-- script defer src="https://code.jquery.com/jquery-3.5.1.min.js"></script -->
 <script src="{{ 'jquery-3.7.1.min.js' | asset_url }}" defer="defer"></script>
 <script>
   var ws = null;
-//  $( document ).ready(function() {
   document.addEventListener('DOMContentLoaded', function() {
     $("#btn-openai-send").click( function(e) {
       e.preventDefault();
       sendMessageWS(e);
     });
-
-    /*
-//sample communication method for 
-    // Making our connection  
-    let url = '/apps/openint-api/shopify/products';
-    console.log("will connect to " + url);
-
-    $.get( {
-        url: url,
-        data: {},
-        headers: { 'ngrok-skip-browser-warning': true}
-    }, function( data ) {
-      $( "#span-chatgpt-response" ).html("<H2>Shopify Indexed Products....</H2>");
-      data.products.forEach(product => {
-        $( "#span-chatgpt-response" ).append("<p>title:" + product.title + "</p>");
-      });
+    $("#a-toggle-chatgpt").click( function(e) {
+      $("#div-chatgpt-container").show();
     });
-    */
-  });
+  });    
+
 
   function sendMessageWS(e) {
 //      const shop_url = window.Shopify.shop;
