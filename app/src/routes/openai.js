@@ -175,7 +175,18 @@ export async function createMainAssistant(dbClient){
         try{
             //    console.log("vectorStoreId: %s", vectorStoreId);
             const name = "Information Assistant";
-            const instructions = "You are an information assistant. provide advice based on vector files provided.";
+            const instructions = 
+            "You are an information assistant. " +
+            "attached Vector files contain json-formatted information about a product catalogue. " +
+            "the ID of the product is found in the \"id\" keypair, " +
+            "the name (or otherwise knows as the title) of the product is found in the \"title\" keypair, " +
+            "the description of the product is found in the \"body_html\" keypair - in HTML format" +
+            "the URL of the product can be constructed by concatenating \"https://openresourcing.myshopify.com/products/\" with the \"handle\" keypair, " +
+            "the image of the product can be constructed by concatenating \"https://openresourcing.myshopify.com/products/\" with the \"handle\" keypair, " +
+            "there may be multiple \"variants\" nodes per product, " +
+            "the price/s of the product is found in the \"price\" keypair within of the \"variants\" node/s of the product," +
+            "the sku/s of the product is found in the \"sku\" keypair within of the \"variants\" node/s of the product, " +
+            "the weight of the product is found in the \"weight\" keypair within of the \"variants\" node/s of the product";
         
             const assistant = await openai.beta.assistants.create({
                 name: name,

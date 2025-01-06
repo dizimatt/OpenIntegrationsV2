@@ -3,7 +3,7 @@
 client_id = "f41d04d6a33677af465b09689244d872"
 name = "Open Integrations V2"
 handle = "open-integrations-v2"
-application_url = "https://b379-111-65-37-134.ngrok-free.app/auth"
+application_url = "https://a8bc-129-126-14-65.ngrok-free.app/auth"
 embedded = true
 
 [build]
@@ -11,7 +11,7 @@ dev_store_url = "openresourcing.myshopify.com"
 include_config_on_deploy = true
 
 [auth]
-redirect_urls = [ "https://b379-111-65-37-134.ngrok-free.app/auth/callback" ]
+redirect_urls = [ "https://a8bc-129-126-14-65.ngrok-free.app/auth/callback" ]
 
 [webhooks]
 api_version = "2024-07"
