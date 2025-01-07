@@ -231,6 +231,19 @@ app.get('/auth', async (req, res) => {
   shopifyAuth(req,res,dbClient);
 });
 
+app.get('/bigcommerce/auth', async (req, res) => {
+  res.send({bc_auth_success: "success"});
+});
+app.get('/bigcommerce/load', async (req, res) => {
+  res.send({bc_load_status: "success"});
+});
+app.get('/bigcommerce/uninstall', async (req, res) => {
+  res.send({bc_uninstall_status: "success"});
+});
+app.get('/bigcommerce/removeuser', async (req, res) => {
+  res.send({bc_removeuser_status: "success"});
+});
+
 app.get('/auth/callback', async (req, res) => {
   shopifyAuthCallback(req,res,dbClient);
 });
