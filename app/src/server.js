@@ -25,6 +25,7 @@ import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
 import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessage, apiOpenAISendMessageWS} from './routes/openai.js';
+import { bigcommerceAuth, bigcommerceLoad, bigcommerceUninstall, bigcommerceRemoveUser } from './routes/bigcommerce.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";
@@ -194,16 +195,6 @@ app.get('/api/openai/removeassistant', async (req, res) => {
   console.log("route: /api/openai/removeallassistants");
   apiOpenAIRemoveMainAssistant(req, res, dbClient);
 });
-/*
-app.get('/api/openai/sendmessage', async (req, res) => {
-  console.log("route: GET /api/openai/sendmessage");
-  apiOpenAISendMessage(req, res);
-});
-*/
-app.post('/api/openai/sendmessage', async (req, res) => {
-  console.log("route: POST /api/openai/sendmessage");
-  apiOpenAISendMessage(req, res);
-});
 app.ws('/api/openai/send-message-ws', async function(ws,req){
   ws.on('message', async function(msg) {
     const msg_obj = JSON.parse(msg);
@@ -232,16 +223,16 @@ app.get('/auth', async (req, res) => {
 });
 
 app.get('/bigcommerce/auth', async (req, res) => {
-  res.send({bc_auth_success: "success"});
+  bigcommerceAuth(req, res);
 });
 app.get('/bigcommerce/load', async (req, res) => {
-  res.send({bc_load_status: "success"});
+  bigcommerceLoad(req, res);
 });
 app.get('/bigcommerce/uninstall', async (req, res) => {
-  res.send({bc_uninstall_status: "success"});
+  bigcommerceUninstall(req, res);
 });
 app.get('/bigcommerce/removeuser', async (req, res) => {
-  res.send({bc_removeuser_status: "success"});
+  bigcommerceRemoveUser(req, res);
 });
 
 app.get('/auth/callback', async (req, res) => {
