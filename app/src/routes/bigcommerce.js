@@ -1,5 +1,6 @@
 import {Db, MongoClient} from 'mongodb';
 import axios, { all } from 'axios';
+import BigCommerce from 'node-bigcommerce';
 
 export async function bigcommerceAuth(req, res) { //}, _dbClient) {
     const dbClient = new MongoClient(process.env.MONGO_CLIENT_URL);
@@ -43,8 +44,8 @@ export async function bigcommerceAuth(req, res) { //}, _dbClient) {
     }
 
     const shopURL = req.query.shop;
-    res.render('index', { 
-      title: 'Open Integrations App', 
+    res.render('index_bc', { 
+      title: 'Open Integrations BigCommerce App', 
       shopurl: shopURL
     })
 /*  
@@ -56,9 +57,38 @@ export async function bigcommerceAuth(req, res) { //}, _dbClient) {
 */
     return true;
 }
-export async function bigcommerceLoad(req, res) { //}, _dbClient) {
-    res.send({bc_load_status: "success"});
-}
+export async function bigcommerceLoad(req, res) {
+
+    const shopURL = req.query.shop;
+    console.log("will attempt to fecth the shop hash...");
+
+    const dbClient = new MongoClient(process.env.MONGO_CLIENT_URL);
+    const db = dbClient.db('openintegrations');
+
+    const bigcommerceAppDocument = await db.collection("bigcommerceApp").findOne({APP_NAME: process.env.APP_NAME});
+
+    var storehash = null;
+    if (bigcommerceAppDocument) {
+
+        const payload = {
+            secret: bigcommerceAppDocument.API_SECRET,
+            responseType: 'json'
+        };
+        console.log("payload: %o", payload);
+        const bigCommerce = new BigCommerce(
+            payload
+        );
+        const data = await bigCommerce.verify(req.query['signed_payload']);
+        storehash = data.store_hash;
+        console.log("bigcommerce returned auth data: %o", data);
+    }
+    res.render('index_bc', { 
+      title: 'Open Integrations BigCommerce App', 
+      shopurl: storehash
+    });
+//    res.send({bc_load_status: "success"});
+};
+
 export async function bigcommerceUninstall(req, res) { //}, _dbClient) {
     res.send({bc_uninstall_status: "success"});
 }
@@ -66,24 +96,3 @@ export async function bigcommerceRemoveUser(req, res) { //}, _dbClient) {
     res.send({bc_removeuser_status: "success"});
 }
 
-//wip: 
-const sample_response = 
-{ "data": 
-    { "access_token": "3jiqii2679emauq7ur01pzgzp48a8lb", 
-        "scope": "store_v2_default store_v2_products_read_only", 
-        "user": 
-        { 
-            "id": 1264190, 
-            "username": "matt.dilley@openresourcing.com.au", 
-            "email": "matt.dilley@openresourcing.com.au" 
-        }, 
-        "owner": { 
-            "id": 1264190, 
-            "username": "matt.dilley@openresourcing.com.au", 
-            "email": "matt.dilley@openresourcing.com.au" 
-        }, 
-        "context": "stores/rpx9efkcf8", 
-        "ajs_anonymous_id": null, 
-        "account_uuid": "665e0970-bf98-475d-9d40-bafca85c5a03" 
-    } 
-}

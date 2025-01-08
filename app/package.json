@@ -29,6 +29,7 @@
     "hmac-auth-express": "^9.0.0",
     "https": "^1.0.0",
     "mongodb": "^5.7.0",
+    "node-bigcommerce": "^4.1.0",
     "openai": "^4.77.0",
     "pug": "^3.0.3",
     "xml-js": "^1.6.11"

@@ -1,0 +1,199 @@
+html
+  head
+    title= title
+  body
+    h1= 'Welcome to Open Integrations App - BigCommerce shop: ' + shopurl
+    table
+      tr 
+        th(style="border-bottom: 2px solid red;") Shopify
+        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") tiktok
+        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") lazada
+        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") OpenAI
+      tr
+        td
+          a(id="a-shopify-products" href='#') products
+          br
+          a(id="a-shopify-reindex-products" href='#') re-index products
+          br
+          a(id="a-shopify-indexed-products" href='#') indexed products
+        td(style="border-left: 2px solid red;")
+          a(id="a-tiktok-products" href='#') products
+        td(style="border-left: 2px solid red;")
+          a(id="a-lazada-products" href='#') products
+          br
+          a(id="a-lazada-reindex-products" href='#') re-index products
+          br
+          a(id="a-lazada-indexed-products" href='#') Indexed products
+        td(style="border-left: 2px solid red;")
+          a(id="a-openai-removeallassistants" href='#') close main assistant
+          br
+    br
+    h3 Ask ChatGPT a question:
+    form(id="form-openai" action="#") 
+      textarea(id="textarea-openai-message", cols=40, rows=5)
+      br
+      input(id="btn-openai-send" type="button", value="Send")
+      br
+      textarea(id="textarea-openai-response", cols=40, rows=5)
+      br
+    br
+    h2 output console
+    hr
+
+div(id="jquerydiv")
+
+script(src="https://code.jquery.com/jquery-3.5.1.min.js")
+script.
+
+  var ws = null;
+
+  $( document ).ready(function() {
+    $("#a-shopify-products").click( function(e) {
+      fetchShopifyProducts("#{shopurl}");
+    });
+    $("#a-shopify-indexed-products").click( function(e) {
+      fetchShopifyIndexedProducts("#{shopurl}");
+    });
+    $("#a-shopify-reindex-products").click( function(e) {
+      reindexShopifyProducts("#{shopurl}");
+    });
+    $("#a-tiktok-products").click( function(e) {
+      fetchTiktokProducts("#{shopurl}");
+    });
+    $("#a-lazada-products").click( function(e) {
+      fetchLazadaProducts("#{shopurl}");
+    });
+    $("#a-lazada-indexed-products").click( function(e) {
+      fetchLazadaIndexedProducts("#{shopurl}");
+    });
+    $("#a-lazada-reindex-products").click( function(e) {
+      reindexLazadaProducts("#{shopurl}");
+    });
+    $("#a-openai-removeallassistants").click( function(e) {
+      openAIRemoveMainAssistant("#{shopurl}");
+    });
+    $("#btn-openai-send").click( function(e) {
+      e.preventDefault();
+      const openai_message = $("#textarea-openai-message").val();
+      sendMessageWS(e);
+      //openAISendMessage(openai_message);
+    });
+  });
+
+  function openAISendMessage(message){
+    
+    console.log("openAISendMessage, question:" + message);
+
+    var data = {
+        question: message
+    };
+
+    $.ajax({
+        type: "POST",
+        url: "/api/openai/sendmessage",
+        data: data,
+        success: function (data) {
+            console.log(data);
+            $( "#textarea-openai-response" ).val(data.content.message_content);
+        },
+        dataType: "json"
+    });
+  };
+
+  function openAIRemoveMainAssistant(shopurl){
+    console.log("fetchShopifyProducts");
+    $.get( "/api/openai/removeassistant?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>Open API Test</H2>");
+      $( "#jquerydiv" ).append("<p>" + JSON.stringify(data) + "</p>");
+    });
+  };
+
+  function fetchShopifyProducts(shopurl){
+    console.log("fetchShopifyProducts");
+    $.get( "/api/shopify/products?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>Shopify Products</H2>");
+      data.products.forEach(product => {
+        $( "#jquerydiv" ).append("<p>title:" + product.title + "</p>");
+      });
+    });
+  };
+
+  function reindexShopifyProducts(shopurl){
+    console.log("reindexShopifyProducts");
+    $.get( "/api/shopify/products/index?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>ReIndexed Shopify Products</H2>");
+    });
+  };
+  function fetchShopifyIndexedProducts(shopurl){
+    console.log("fetchShopifyIndexedProducts");
+    $.get( "/api/products?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>Shopify Indexed Products</H2>");
+      data.products.forEach(product => {
+        $( "#jquerydiv" ).append("<p>title:" + product.title + "</p>");
+      });
+    });
+  };
+  function fetchTiktokProducts(shopurl){
+    console.log("fetchTiktokProducts");
+    $.get( "/api/tiktok/products", function( data ) {
+      $( "#jquerydiv" ).html("<H2>Tiktok Products</H2>");
+      data.products.forEach(product => {
+        $( "#jquerydiv" ).append("<p>name:" + product[0].name + "</p>");
+      });
+    });
+  };
+  function fetchLazadaProducts(shopurl){
+    console.log("fetchLazadaProducts...");
+    $.get( "/api/lazada/products", function( data ) {
+      $( "#jquerydiv" ).html("<H2>Lazada Products</H2>");
+      data.products[0].forEach(product => {
+        $( "#jquerydiv" ).append("<p>name:" + product.attributes.name + "</p>");
+      });
+    });
+  };
+  function reindexLazadaProducts(shopurl){
+    console.log("reindexLazadaProducts");
+    $.get( "/api/lazada/products/index?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>ReIndexed Lazada Products</H2>");
+    });
+  };
+  function fetchLazadaIndexedProducts(shopurl){
+    console.log("fetchLazadaIndexedProducts...");
+    $.get( "/api/lazada/indexed_products?shop="+shopurl, function( data ) {
+      $( "#jquerydiv" ).html("<H2>Lazada Indexed Products</H2>");
+      data.products.forEach(product => {
+        $( "#jquerydiv" ).append("<p>name:" + product.attributes.name + "</p>");
+      });
+    });
+  };
+
+  function sendMessageWS(e) {
+      console.log("called sendMessageWS");
+      ws = new WebSocket("ws://localhost/api/openai/send-message-ws");
+      e.preventDefault();
+      var question = $('#textarea-openai-message').val(); 
+      var url = "/send-message-ws";
+      var data = {
+          question: question
+      };
+      var dataType = "json";
+
+      ws.addEventListener('message', function (event) {
+          onMessageFromServer(event);
+      });
+
+      ws.onopen = function() {
+          console.log('websocket open!');
+          ws.send(JSON.stringify(data));
+      };
+
+  };
+  function onMessageFromServer(e) {
+      e.preventDefault();
+      if (e.data == "<aitextdone />") {
+          console.log('closing websocket!');
+          ws.close();
+      } else {
+          $("#textarea-openai-response").val( $("#textarea-openai-response").val() +e.data);
+      }
+  };
