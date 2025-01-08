@@ -29,3 +29,13 @@ openintegrations> db.tiktokApp.find();
     REDIRECT_URL: 'fd1b-118-189-67-149.ngrok-free.app/tiktok/auth/callback'
   }
 ]
+openintegrations> db.bigcommerceApp.find();
+[
+  {
+    _id: ObjectId("677dfce9f0c5db91ea19c081"),
+    APP_NAME: 'OpenIntegrationsV2',
+    API_KEY: '',
+    API_SECRET: '',
+    HOSTNAME: 'bdc9-111-65-63-23.ngrok-free.app'
+  }
+]

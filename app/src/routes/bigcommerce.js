@@ -18,7 +18,7 @@ export async function bigcommerceAuth(req, res) { //}, _dbClient) {
       'Content-Type': 'application/json',
       'accept': 'application/json'
     };
-    const app_document = await db.collection("bigcommerceApp").findOne({APP_NAME: process.env.BIGCOMMERCE_APP_NAME});
+    const app_document = await db.collection("bigcommerceApp").findOne({APP_NAME: process.env.APP_NAME});
     if (app_document) {
         const oauth2_post_data = {
             client_id: app_document.API_KEY,
@@ -34,10 +34,11 @@ export async function bigcommerceAuth(req, res) { //}, _dbClient) {
         try{
             const response = await axios.post(oauth2_token_url, oauth2_post_data, {headers:oauth2_headers});
             response_data.data = response.data;
+            response_data.data.APP_NAME=process.env.APP_NAME;
 
             db.collection("bigcommerceSession").insertOne(response_data.data);
         }catch(error){
-        console.log("error: %o", error);
+        console.log("error: %o", error.response.data);
         }
     }
 
