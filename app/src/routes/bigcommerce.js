@@ -42,12 +42,18 @@ export async function bigcommerceAuth(req, res) { //}, _dbClient) {
         }
     }
 
+    const shopURL = req.query.shop;
+    res.render('index', { 
+      title: 'Open Integrations App', 
+      shopurl: shopURL
+    })
+/*  
     res.send({bc_auth_success: "success",
         query: req.query,
         body: req.body,
         response: response_data
     });
-  
+*/
     return true;
 }
 export async function bigcommerceLoad(req, res) { //}, _dbClient) {
