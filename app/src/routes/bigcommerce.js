@@ -1,43 +1,51 @@
+import {Db, MongoClient} from 'mongodb';
 import axios, { all } from 'axios';
 
 export async function bigcommerceAuth(req, res) { //}, _dbClient) {
+    const dbClient = new MongoClient(process.env.MONGO_CLIENT_URL);
+    const db = dbClient.db('openintegrations');
+
     console.log("bigcommerceAuth: req query: %o, req body: %o", req.query, req.body);
 
     const account_uuid = req.query.account_uuid;
     const code = req.query.code;
     const context = req.query.context;
     const scope = req.query.scope;
+    const response_data = {}
 
     const oauth2_token_url = `https://login.bigcommerce.com/oauth2/token`;
     const oauth2_headers = {
       'Content-Type': 'application/json',
       'accept': 'application/json'
     };
-    const oauth2_post_data = {
-        client_id: "a8e12qjcdizv425rvffddslh3c4cnf6",
-        client_secret: "a73218264f957614997a1f105e42cf8d3fb12ac7ba962016e9223c91c8bff8c9",
-        code: code,
-        context: context,
-        scope: scope,
-        grant_type: "authorization_code",
-        redirect_uri: "https://b105-111-65-37-164.ngrok-free.app/bigcommerce/auth"
-    };
+    const app_document = await db.collection("bigcommerceApp").findOne({APP_NAME: process.env.BIGCOMMERCE_APP_NAME});
+    if (app_document) {
+        const oauth2_post_data = {
+            client_id: app_document.API_KEY,
+            client_secret: app_document.API_SECRET, 
+            code: code,
+            context: context,
+            scope: scope,
+            grant_type: "authorization_code",
+            redirect_uri: `https://${app_document.HOSTNAME}/bigcommerce/auth`
+        };
+        console.log("oauth2_post_data: %o", oauth2_post_data);
 
-    const response_data = {}
-    try{
-        const response = await axios.post(oauth2_token_url, oauth2_post_data, {headers:oauth2_headers});
-        response_data.data = response.data;
-    }catch(error){
-      console.log("error: %o", error);
+        try{
+            const response = await axios.post(oauth2_token_url, oauth2_post_data, {headers:oauth2_headers});
+            response_data.data = response.data;
+
+            db.collection("bigcommerceSession").insertOne(response_data.data);
+        }catch(error){
+        console.log("error: %o", error);
+        }
     }
-
 
     res.send({bc_auth_success: "success",
         query: req.query,
         body: req.body,
         response: response_data
     });
-
   
     return true;
 }
