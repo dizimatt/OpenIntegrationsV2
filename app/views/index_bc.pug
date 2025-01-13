@@ -3,31 +3,33 @@ html
     title= title
   body
     h1= 'Welcome to Open Integrations App - BigCommerce shop: ' + shopurl
-    table
-      tr 
-        th(style="border-bottom: 2px solid red;") Shopify
-        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") tiktok
-        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") lazada
-        th(style="border-bottom: 2px solid red;border-left: 2px solid red;") OpenAI
-      tr
-        td
-          a(id="a-shopify-products" href='#') products
-          br
-          a(id="a-shopify-reindex-products" href='#') re-index products
-          br
-          a(id="a-shopify-indexed-products" href='#') indexed products
-        td(style="border-left: 2px solid red;")
-          a(id="a-tiktok-products" href='#') products
-        td(style="border-left: 2px solid red;")
-          a(id="a-lazada-products" href='#') products
-          br
-          a(id="a-lazada-reindex-products" href='#') re-index products
-          br
-          a(id="a-lazada-indexed-products" href='#') Indexed products
-        td(style="border-left: 2px solid red;")
-          a(id="a-openai-removeallassistants" href='#') close main assistant
-          br
-    br
+    //-
+      table
+        tr 
+          th(style="border-bottom: 2px solid red;") Shopify
+          th(style="border-bottom: 2px solid red;border-left: 2px solid red;") tiktok
+          th(style="border-bottom: 2px solid red;border-left: 2px solid red;") lazada
+          th(style="border-bottom: 2px solid red;border-left: 2px solid red;") OpenAI
+        tr
+          td
+            a(id="a-shopify-products" href='#') products
+            br
+            a(id="a-shopify-reindex-products" href='#') re-index products
+            br
+            a(id="a-shopify-indexed-products" href='#') indexed products
+          td(style="border-left: 2px solid red;")
+            a(id="a-tiktok-products" href='#') products
+          td(style="border-left: 2px solid red;")
+            a(id="a-lazada-products" href='#') products
+            br
+            a(id="a-lazada-reindex-products" href='#') re-index products
+            br
+            a(id="a-lazada-indexed-products" href='#') Indexed products
+          td(style="border-left: 2px solid red;")
+            a(id="a-openai-removeallassistants" href='#') close main assistant
+            br
+      br
+
     h3 Ask ChatGPT a question:
     form(id="form-openai" action="#") 
       textarea(id="textarea-openai-message", cols=40, rows=5)
