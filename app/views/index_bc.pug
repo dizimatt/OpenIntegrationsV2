@@ -30,6 +30,9 @@ html
             br
       br
 
+    a(id="a-bc-add-widget-template" href='#') add widget template
+    br
+
     h3 Ask ChatGPT a question:
     form(id="form-openai" action="#") 
       textarea(id="textarea-openai-message", cols=40, rows=5)
@@ -50,6 +53,11 @@ script.
   var ws = null;
 
   $( document ).ready(function() {
+    $("#a-bc-add-widget-template").click( function(e) {
+      $.get( "/api/bigcommerce/add_widget_template?shop=#{shopurl}", function( data ) {
+        $("#textarea-openai-response").val( $("#textarea-openai-response").val() + JSON.stringify(data));
+      });
+    });
     $("#a-shopify-products").click( function(e) {
       fetchShopifyProducts("#{shopurl}");
     });

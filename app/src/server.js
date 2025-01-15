@@ -25,7 +25,7 @@ import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
 import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessage, apiOpenAISendMessageWS} from './routes/openai.js';
-import { bigcommerceAuth, bigcommerceLoad, bigcommerceUninstall, bigcommerceRemoveUser } from './routes/bigcommerce.js';
+import { bigcommerceAuth, bigcommerceLoad, bigcommerceUninstall, bigcommerceRemoveUser, apiBigcommerceAddWidgetTemplate, apiBigcommerceCreateWidget} from './routes/bigcommerce.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";
@@ -182,7 +182,20 @@ app.use("/api/sec",(req, res, next) => {
       next();
     }
   });
-
+  app.use('/api/login', async (req, res) => {
+    apiLogin(req, res, dbClient);
+  });
+  
+  app.use('/api/shopify/mandatory/customers/data_request', async (req, res) => {
+    apiShopifyMandatoryCustomersDataRequest(req, res, dbClient);
+  })
+  app.use('/api/shopify/mandatory/customers/redact', async (req, res) => {
+    apiShopifyMandatoryCustomersRedact(req, res, dbClient);
+  })
+  app.use('/api/shopify/mandatory/shop/redact', async (req, res) => {
+    apiShopifyMandatoryShopRedact(req, res, dbClient);
+  })
+  
 app.get('/api/shopify/gql/batch/delete', (req, res) => {
   apiShopifyGqlBatchDelete(req, res, dbClient);
 });
@@ -220,19 +233,6 @@ app.get('/api',(req, res) => {
 // next two functions are the shopify app installation functions - add these endpoints into the shopify app config BEFORE installing
 app.get('/auth', async (req, res) => {
   shopifyAuth(req,res,dbClient);
-});
-
-app.get('/bigcommerce/auth', async (req, res) => {
-  bigcommerceAuth(req, res);
-});
-app.get('/bigcommerce/load', async (req, res) => {
-  bigcommerceLoad(req, res);
-});
-app.get('/bigcommerce/uninstall', async (req, res) => {
-  bigcommerceUninstall(req, res);
-});
-app.get('/bigcommerce/removeuser', async (req, res) => {
-  bigcommerceRemoveUser(req, res);
 });
 
 app.get('/auth/callback', async (req, res) => {
@@ -326,20 +326,28 @@ app.get('/api/lazada/products/index', async (req, res) => {
 app.get('/api/lazada/indexed_products', async (req, res) => {
   apiLazadaIndexedProducts(req,res,dbClient);
 });
-
-app.use('/api/login', async (req, res) => {
-  apiLogin(req, res, dbClient);
+app.get('/bigcommerce/auth', async (req, res) => {
+  bigcommerceAuth(req, res);
+});
+app.get('/bigcommerce/load', async (req, res) => {
+  bigcommerceLoad(req, res);
+});
+app.get('/bigcommerce/uninstall', async (req, res) => {
+  bigcommerceUninstall(req, res);
+});
+app.get('/bigcommerce/removeuser', async (req, res) => {
+  bigcommerceRemoveUser(req, res);
+});
+app.get('/api/bigcommerce/add_widget_template', async (req, res) => {
+  console.log("will add the widget template...");
+  apiBigcommerceAddWidgetTemplate(req, res);
+});
+app.get('/api/bigcommerce/create_widget', async (req, res) => {
+  console.log("will create the widget ...");
+  apiBigcommerceCreateWidget(req, res);
 });
 
-app.use('/api/shopify/mandatory/customers/data_request', async (req, res) => {
-  apiShopifyMandatoryCustomersDataRequest(req, res, dbClient);
-})
-app.use('/api/shopify/mandatory/customers/redact', async (req, res) => {
-  apiShopifyMandatoryCustomersRedact(req, res, dbClient);
-})
-app.use('/api/shopify/mandatory/shop/redact', async (req, res) => {
-  apiShopifyMandatoryShopRedact(req, res, dbClient);
-})
+
 
 app.listen(8000, () => {
     console.log('Server is listening on port 8000');
