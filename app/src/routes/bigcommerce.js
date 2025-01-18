@@ -25,7 +25,9 @@ export async function bigcommerceAuth(req, res) { //}, _dbClient) {
       'Content-Type': 'application/json',
       'accept': 'application/json'
     };
-    const app_document = await db.collection("bigcommerceApp").findOne({APP_NAME: process.env.APP_NAME});
+    const app_document = await db.collection("bigcommerceApp").findOne({
+        APP_NAME: process.env.APP_NAME
+    });
     if (app_document) {
         const oauth2_post_data = {
             client_id: app_document.API_KEY,
@@ -90,6 +92,9 @@ export async function bigcommerceLoad(req, res) {
             console.log("bigcommerce returned auth data: %o", data);
         } catch (error) {
             console.log("warning: store_hash could not be fetched, continuing without: %o", error);
+            if (req.query.shop){
+                storehash = req.query.shop;
+            }       
         }
     }
     res.render('index_bc', { 
@@ -105,11 +110,47 @@ export async function bigcommerceUninstall(req, res) { //}, _dbClient) {
 export async function bigcommerceRemoveUser(req, res) { //}, _dbClient) {
     res.send({bc_removeuser_status: "success"});
 }
-export async function apiBigcommerceCreateWidget(req, res) { //}, _dbClient) {
+async function apiBigcommercePlaceWidget(shop_name, widget_uuid, access_token) { //}, _dbClient) {
+    console.log("widget uuid: %s", widget_uuid);
+    try {
+        const post_data = 
+        {
+            "widget_uuid": widget_uuid,
+            "sort_order": 1,
+            "region": "header_bottom",
+            "template_file": "pages/home",
+            "status": "active"
+        };
+        const headers = {
+            'X-Auth-Token': access_token,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          };
+        const call_response = await axios.post(`https://api.bigcommerce.com/stores/${shop_name}/v3/content/placements`, 
+            post_data, 
+            {headers:headers}
+        );
+        return {
+            status: "success",
+            data: call_response.data.data
+        }    
+
+    }   catch (error) {
+        console.log("api_bc_createwidget error: %o", error.response);
+        return {
+            status: "failed",
+            data: error.response
+        }
+    }
+
+};
+
+async function apiBigcommerceCreateWidget(shop_name, template_uuid, access_token) { //}, _dbClient) {
+    console.log("template uuid: %s", template_uuid);
     try {
         const post_data = {
             "name": "Widget Header Images (OpenIntegrations)",
-            "template": "{{#each images}}<a href='{{image_url}}'><img src={{image_source}} style='width:33.3%'/></a>{{/each}}",
+            "template": "", //"{{#each images}}<a href='{{image_url}}'><img src={{image_source}} style='width:33.3%'/></a>{{/each}}",
             "widget_configuration": {
                 "images": [{
                     "image_source": "https://cdn11.bigcommerce.com/s-n0i50vy/images/stencil/1280x1280/products/109/361/kinfolkessentialissue_1024x1024__22507.1456436715.jpg?c=2&imbypass=on"
@@ -123,33 +164,51 @@ export async function apiBigcommerceCreateWidget(req, res) { //}, _dbClient) {
                     }
                 ]
             },
-            "widget_template_uuid":"e7f0123c-358d-49e0-b08a-0957b56e4742"
+            "widget_template_uuid": template_uuid
         }
         const headers = {
-            'X-Auth-Token': 'g1342jmaig023adk1o9kmaqjz3pd7dq',
+            'X-Auth-Token': access_token,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           };
-        const call_response = await axios.post('https://api.bigcommerce.com/stores/rpx9efkcf8/v3/content/widgets', 
+        const call_response = await axios.post(`https://api.bigcommerce.com/stores/${shop_name}/v3/content/widgets`, 
             post_data, 
             {headers:headers}
         );
+        return {
+            status: "success",
+            data: call_response.data.data
+        }    
 
-
-        res.send({api_bc_addwidgettemplate_status: "success",
-            response: call_response.data
-        });
     }   catch (error) {
-        console.log("api_bc_createwidget error: %o", error.response.data);
-        res.send({api_bc_createwidget_status: "failed"});
+        console.log("api_bc_createwidget error: %o", error.response);
+        return {
+            status: "failed",
+            data: error.response
+        }
     }
+
 };
-export async function apiBigcommerceAddWidgetTemplate(req, res) { //}, _dbClient) {
+export async function apiBigcommerceInitChatgptWidget(req, res, _dbClient) {
+    const shop_name = req.query.shop;
+
+    const db = _dbClient.db('openintegrations');
+    const bcSession = await db.collection("bigcommerceSession").findOne({
+        APP_NAME: process.env.APP_NAME,
+        context: `stores/${shop_name}`
+    });
+
+    if (!bcSession){
+        // you cannot do this if the store cannot be looked up
+        console.log("cannot lookup bc app:%s, store:%s", process.env.APP_NAME, shop_name);
+        res.send({api_bc_addwidgettemplate_status: "failed"});
+        return;
+    }
+
     var filedata = null;
     try {
-          const fileUrl = new URL("/app/views/bc-templates/openwidget.html", import.meta.url);
-          filedata = await readFile(fileUrl, { encoding: "utf8" });
-//        filedata = fs.readFileSync(file_dir + '../views/bc-templates/openwidget.html', 'utf8' );
+        const fileUrl = new URL("/app/views/bc-templates/openwidget.html", import.meta.url);
+        filedata = await readFile(fileUrl, { encoding: "utf8" });
         console.log("filedata: %o", filedata);
     } catch (error) {
         console.log("error: %o", error);
@@ -160,23 +219,44 @@ export async function apiBigcommerceAddWidgetTemplate(req, res) { //}, _dbClient
             "template": filedata //"{{#each images}}<a href='{{image_url}}'><img src={{image_source}} style='width:33.3%'/></a>{{/each}}"
         };
         const headers = {
-            'X-Auth-Token': 'g1342jmaig023adk1o9kmaqjz3pd7dq',
+            'X-Auth-Token': bcSession.access_token, //'g1342jmaig023adk1o9kmaqjz3pd7dq',
             'Content-Type': 'application/json',
             'Accept': 'application/json'
-          };
+        };
+        console.log("headers: %o", headers);
+        const url = `https://api.bigcommerce.com/stores/${shop_name}/v3/content/widget-templates`
+        console.log("url: %s", url);
       
-        const call_response = await axios.post('https://api.bigcommerce.com/stores/rpx9efkcf8/v3/content/widget-templates', 
+        const widget_templates_response = await axios.post(url, 
             post_data, 
             {headers:headers}
         );
+        const widget_templates_response_data = widget_templates_response.data.data;
+        const template_uuid = widget_templates_response_data.uuid;
 
-        res.send({api_bc_addwidgettemplate_status: "success",
-            response: call_response.data
-        });
+        const response_data = {
+            widget_templates_response_data: widget_templates_response_data
+        };
+
+        try{
+            const create_widget_response = await apiBigcommerceCreateWidget(shop_name, template_uuid, bcSession.access_token);
+            response_data.create_widget_response_data = create_widget_response.data;
+            const widget_uuid = create_widget_response.data.uuid;
+
+            const place_widget_response = await apiBigcommercePlaceWidget(shop_name, widget_uuid, bcSession.access_token);
+            response_data.place_widget_response_data = place_widget_response.data;
+
+        } catch (error) {
+            console.log("apiBigcommerceCreateWidget error: %o", error.response);
+            response_data.create_widget_response_data = error.response;
+        }
+
+        res.send({response_data});
+
     } catch (error) {
-        console.log("error: %o", error.response.data);
+        console.log("apiBigcommerceInitChatgptWidget error: %o", error);
         res.send({api_bc_addwidgettemplate_status: "failed"});
     }
 
-}
+};
 

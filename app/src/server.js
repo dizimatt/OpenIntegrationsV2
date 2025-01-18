@@ -25,7 +25,7 @@ import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
 import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessage, apiOpenAISendMessageWS} from './routes/openai.js';
-import { bigcommerceAuth, bigcommerceLoad, bigcommerceUninstall, bigcommerceRemoveUser, apiBigcommerceAddWidgetTemplate, apiBigcommerceCreateWidget} from './routes/bigcommerce.js';
+import { bigcommerceAuth, bigcommerceLoad, bigcommerceUninstall, bigcommerceRemoveUser, apiBigcommerceInitChatgptWidget} from './routes/bigcommerce.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";
@@ -338,15 +338,16 @@ app.get('/bigcommerce/uninstall', async (req, res) => {
 app.get('/bigcommerce/removeuser', async (req, res) => {
   bigcommerceRemoveUser(req, res);
 });
-app.get('/api/bigcommerce/add_widget_template', async (req, res) => {
+app.get('/api/bigcommerce/init_chatgpt_widget', async (req, res) => {
   console.log("will add the widget template...");
-  apiBigcommerceAddWidgetTemplate(req, res);
+  apiBigcommerceInitChatgptWidget(req, res, dbClient);
 });
+/*
 app.get('/api/bigcommerce/create_widget', async (req, res) => {
   console.log("will create the widget ...");
   apiBigcommerceCreateWidget(req, res);
 });
-
+*/
 
 
 app.listen(8000, () => {
