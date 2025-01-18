@@ -1,6 +1,58 @@
 <h1>Open Widgets</h1>
-{{#each images}}
-    <a href='{{image_url}}'>
-        <img src={{image_source}} style='width:33.3%'/>
-    </a>
-{{/each}}
+<h3>Ask ChatGPT a question:</h3>
+<form id="form-openai" action="#"> 
+  <textarea id="textarea-openai-message", cols=40, rows=5></textarea>
+  <br />
+  <input id="btn-openai-send" type="button", value="Send">
+  <br />
+  <textarea id="textarea-openai-response", cols=40, rows=5></textarea>
+  <br />
+</form>
+<br />
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+
+  var ws = null;
+
+  $( document ).ready(function() {
+    $("#btn-openai-send").click( function(e) {
+      e.preventDefault();
+      const openai_message = $("#textarea-openai-message").val();
+      sendMessageWS(e);
+      //openAISendMessage(openai_message);
+    });
+  });
+
+
+  function sendMessageWS(e) {
+      console.log("called sendMessageWS");
+      const url = 'ws://3236-111-65-63-100.ngrok-free.app/api/openai/send-message-ws';
+      ws = new WebSocket("ws://localhost/api/openai/send-message-ws");
+      e.preventDefault();
+      var question = $('#textarea-openai-message').val(); 
+      var data = {
+          question: question
+      };
+      var dataType = "json";
+
+      ws.addEventListener('message', function (event) {
+          onMessageFromServer(event);
+      });
+
+      ws.onopen = function() {
+          console.log('websocket open!');
+          ws.send(JSON.stringify(data));
+      };
+
+  };
+  function onMessageFromServer(e) {
+      e.preventDefault();
+      if (e.data == "<aitextdone />") {
+          console.log('closing websocket!');
+          ws.close();
+      } else {
+          $("#textarea-openai-response").val( $("#textarea-openai-response").val() +e.data);
+      }
+  };
+
+</script>
