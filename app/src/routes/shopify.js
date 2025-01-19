@@ -1,4 +1,4 @@
-import shopify, {shopifyApi, LATEST_API_VERSION, ApiVersion, DataType} from '@shopify/shopify-api';
+import {shopifyApi, LATEST_API_VERSION, ApiVersion, DataType} from '@shopify/shopify-api';
 import csvToJson from 'csvtojson';
 
 

@@ -16,10 +16,6 @@ import {apiShopifyProducts, apiShopifyProductsIndex, apiShopifyProductsImport, a
   from './routes/shopify.js';
 import {lazadaAuthCallback,apiLazadaProducts,apiLazadaIndexedProducts, apiLazadaProductsIndex} from './routes/lazada.js';
 import {tiktokAuthCallback,apiTiktokProducts} from './routes/tiktok.js';
-
-import { createApp } from '@shopify/app-bridge';
-import { ResourcePicker }  from '@shopify/app-bridge/actions/index.js';
-
 import { createHmac } from 'crypto';
 import fs, { truncate } from 'fs';
 import https from 'https';

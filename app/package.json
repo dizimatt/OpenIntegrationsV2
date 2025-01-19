@@ -14,11 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@shopify/app": "^3.49.3",
-    "@shopify/app-bridge": "^3.7.10",
-    "@shopify/cli": "^3.49.3",
-    "@shopify/shopify-api": "^8.1.1",
-    "@shopify/shopify-app-express": "^3.0.2",
+    "@shopify/shopify-api": "^11.7.0",
     "axios": "^1.6.2",
     "body-parser": "^1.20.2",
     "csvtojson": "^2.0.10",
