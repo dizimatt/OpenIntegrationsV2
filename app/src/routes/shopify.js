@@ -193,7 +193,9 @@ async function getShopifyProducts(req, _dbClient) {
 }
 export async function apiShopifyProducts(req, res, _dbClient) {
   dbClient = _dbClient;
-  res.send(await getShopifyProducts(req,_dbClient));
+  res.send(await getGqlProducts(req,_dbClient));
+
+//  res.send(await getShopifyProducts(req,_dbClient));
 }
 
 export async function apiShopifyProductsIndex(req, res, _dbClient) {

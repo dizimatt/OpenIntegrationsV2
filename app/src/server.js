@@ -217,8 +217,8 @@ app.ws('/api/openai/send-message-ws', async function(ws,req){
 
 app.get('/',(req, res) => {
   const shopURL = req.query.shop;
-  res.render('index', { 
-    title: 'Open Integrations App', 
+  res.render('index_shopify', { 
+    title: 'Open Integrations Shopify App', 
     shopurl: shopURL
   })
 });
