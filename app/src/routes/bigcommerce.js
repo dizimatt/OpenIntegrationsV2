@@ -82,7 +82,6 @@ export async function bigcommerceLoad(req, res) {
             secret: bigcommerceAppDocument.API_SECRET,
             responseType: 'json'
         };
-        console.log("payload: %o", payload);
         try{
             const bigCommerce = new BigCommerce(
                 payload
@@ -111,7 +110,6 @@ export async function bigcommerceRemoveUser(req, res) { //}, _dbClient) {
     res.send({bc_removeuser_status: "success"});
 }
 async function apiBigcommercePlaceWidget(shop_name, widget_uuid, access_token) { //}, _dbClient) {
-    console.log("widget uuid: %s", widget_uuid);
     try {
         const post_data = 
         {
@@ -146,7 +144,6 @@ async function apiBigcommercePlaceWidget(shop_name, widget_uuid, access_token) {
 };
 
 async function apiBigcommerceCreateWidget(shop_name, template_uuid, access_token) { //}, _dbClient) {
-    console.log("template uuid: %s", template_uuid);
     try {
         const post_data = {
             "name": "Widget Header Images (OpenIntegrations)",
@@ -189,6 +186,62 @@ async function apiBigcommerceCreateWidget(shop_name, template_uuid, access_token
     }
 
 };
+///api/bigcommerce/update_chatgpt_template
+export async function apiBigcommerceUpdateChatgptTemplate(req, res, _dbClient) {
+    const shop_name = req.body.shop;
+
+    const db = _dbClient.db('openintegrations');
+    const bcSession = await db.collection("bigcommerceSession").findOne({
+        APP_NAME: process.env.APP_NAME,
+        context: `stores/${shop_name}`
+    });
+
+    if (!bcSession){
+        // you cannot do this if the store cannot be looked up
+        console.log("cannot lookup bc app:%s, store:%s", process.env.APP_NAME, shop_name);
+        res.send({api_bigcommerce_update_chatgpt_template: "failed"});
+        return;
+    }
+    try{
+        const template_content = req.body.template_content;
+        const template_uuid = req.body.template_uuid;
+        //"5d7d6418-3bb6-4e53-bfd5-29e1a320df28";
+        const post_data = {
+            "name": "Header Images (OpenIntegrations)",
+            "template":  template_content
+        };
+        const headers = {
+            'X-Auth-Token': bcSession.access_token, //'g1342jmaig023adk1o9kmaqjz3pd7dq',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+        const url = `https://api.bigcommerce.com/stores/${shop_name}/v3/content/widget-templates/${template_uuid}`;
+      
+        const widget_templates_response = await axios.put(url, 
+            post_data, 
+            {headers:headers}
+        );
+        const widget_templates_response_data = widget_templates_response.data.data;
+
+        const response_data = {
+            widget_templates_response_data: widget_templates_response_data
+        };
+
+        res.send({
+            status: "success", 
+            data: widget_templates_response_data});
+    } catch (error) {
+        console.log("apiBigcommerceUpdateChatgptWidget error: %o", error.message);
+        res.send({status: "failed"});
+    };
+
+    /*
+    res.send({
+        body: req.body
+    });
+    */
+
+};
 export async function apiBigcommerceInitChatgptWidget(req, res, _dbClient) {
     const shop_name = req.query.shop;
 
@@ -209,7 +262,6 @@ export async function apiBigcommerceInitChatgptWidget(req, res, _dbClient) {
     try {
         const fileUrl = new URL("/app/views/bc-templates/openwidget.html", import.meta.url);
         filedata = await readFile(fileUrl, { encoding: "utf8" });
-        console.log("filedata: %o", filedata);
     } catch (error) {
         console.log("error: %o", error);
     }
@@ -223,9 +275,7 @@ export async function apiBigcommerceInitChatgptWidget(req, res, _dbClient) {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         };
-        console.log("headers: %o", headers);
         const url = `https://api.bigcommerce.com/stores/${shop_name}/v3/content/widget-templates`
-        console.log("url: %s", url);
       
         const widget_templates_response = await axios.post(url, 
             post_data, 

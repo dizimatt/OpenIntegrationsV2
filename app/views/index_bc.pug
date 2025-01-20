@@ -5,37 +5,64 @@ html
     h1= 'Welcome to Open Integrations App - BigCommerce shop: ' + shopurl
 
     a(id="a-bc-init-chatgpt-widget" href='#') Initialise ChatGPT Widget
-    br
-
-    h3 Ask ChatGPT a question:
-    form(id="form-openai" action="#") 
-      textarea(id="textarea-openai-message", cols=40, rows=5)
+    hr
+  
+    h3 Update ChatGPT widget:
+    form(id="form-update-template" action="#")
+      label(for="textarea-template-uuid") template UUID
       br
-      //-
-        input(id="btn-openai-send" type="button", value="Send")
+      input(id="textarea-template-uuid" value="5d7d6418-3bb6-4e53-bfd5-29e1a320df28")
       br
-      textarea(id="textarea-openai-response", cols=40, rows=5)
+      label(for="textarea-template-content") template content 
       br
-    br
+      textarea(id="textarea-template-content", cols=80, rows=10)
+      br
+      input(id="btn-update-template" type="button", value="Update Template")
+    //-
+      h3 Ask ChatGPT a question:
+      form(id="form-openai" action="#") 
+        textarea(id="textarea-openai-message", cols=40, rows=5)
+        br
+        //-
+          input(id="btn-openai-send" type="button", value="Send")
+        br
+        textarea(id="textarea-openai-response", cols=40, rows=5)
+        br
+      br
     h2 output console
     hr
 
-div(id="jquerydiv")
+    div(id="jquerydiv")
 
 script(src="https://code.jquery.com/jquery-3.5.1.min.js")
 script.
 
   var ws = null;
-
   $( document ).ready(function() {
+    $("#btn-update-template").click( function(e) {
+      bcUpateChatgptTemplate();
+    });
     $("#a-bc-init-chatgpt-widget").click( function(e) {
       bcInitChatgptWidget();
     });
   });
 
+  function bcUpateChatgptTemplate(){
+    const data_to_send = {
+      template_uuid: $("#textarea-template-uuid").val(),
+      template_content: $("#textarea-template-content").val(),
+      shop:"#{shopurl}"
+    };
+    $.post( "/api/bigcommerce/update_chatgpt_template",
+      data_to_send,
+      function( data ) {
+        $("#jquerydiv").html(JSON.stringify(data.status));
+      }
+    );
+  }
   function bcInitChatgptWidget(){
       $.get( "/api/bigcommerce/init_chatgpt_widget?shop=#{shopurl}", function( data ) {
-        $("#textarea-openai-response").val( $("#textarea-openai-response").val() + JSON.stringify(data));
+        $("#jquerydiv").val( JSON.stringify(data));
       });
   };
 
