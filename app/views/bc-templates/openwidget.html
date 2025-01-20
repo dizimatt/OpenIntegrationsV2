@@ -26,8 +26,9 @@
 
   function sendMessageWS(e) {
       console.log("called sendMessageWS");
-      const url = 'ws://3236-111-65-63-100.ngrok-free.app/api/openai/send-message-ws';
-      ws = new WebSocket("ws://localhost/api/openai/send-message-ws");
+      const url = 'wss://3236-111-65-63-100.ngrok-free.app/api/openai/send-message-ws';
+//      ws = new WebSocket("ws://localhost/api/openai/send-message-ws");
+      ws = new WebSocket(url);
       e.preventDefault();
       var question = $('#textarea-openai-message').val(); 
       var data = {
