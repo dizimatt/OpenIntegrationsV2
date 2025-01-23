@@ -2,16 +2,17 @@ html
   head
     title= title
   body
-    h1= 'Welcome to Open Integrations App - BigCommerce shop: ' + shopurl
+    h1 ChatGPT Product Catalog Helper App by Open Resourcing
+    h2= 'BigCommerce shop: ' + shopurl
 
     a(id="a-bc-init-chatgpt-widget" href='#') Initialise ChatGPT Widget
     hr
   
-    h3 Update ChatGPT widget:
+    h3 Update ChatGPT Widget:
     form(id="form-update-template" action="#")
-      label(for="textarea-template-uuid") template UUID
+      label(hidden="hide" for="textarea-template-uuid") template UUID
       br
-      input(id="textarea-template-uuid" value="5d7d6418-3bb6-4e53-bfd5-29e1a320df28")
+      input(hidden="hide" id="textarea-template-uuid" value="5d7d6418-3bb6-4e53-bfd5-29e1a320df28")
       br
       label(for="textarea-template-content") template content 
       br

@@ -1,48 +1,64 @@
-<h1>Please Ask Our Information Assistant about our products</h1>
- <a id="a-toggle-chatgpt" href="#">view the assistant</a><br/>
-<div id="div-chatgpt-container" style="display:none;">
-  <table id="table-openai">
-    <tr>
-      <th>
-        <h3>Ask ChatGPT a question</h3>
-      </th>
-      <th>
-        <h3>ChatGPT Response</h3>
-      </th>
-    </tr>
-    <tr>
-      <td>
-        <form id="form-openai" action="#">
-          <textarea id="textarea-openai-message" cols=40 rows=5></textarea>
-          <br />
-          <input id="btn-openai-send" type="button" value="Send" />
-        </form>
-      </td>
-      <td>
-        <textarea id="textarea-openai-response" cols=40, rows=5></textarea>
-      </td>
-    </tr>
-  </table>
-
+<div style="background-color: #ceb0b0;border: 2px solid green; padding: 0px 0px 9px 10px;">
+  <h1 style="margin-top: 0px;">ChatGPT product catalog helper V1.0 - by Open Resourcing</h1>
+  <p>I am here to advise you on your query related to our products<br />
+    please provide me with your question and I will assist you:</p>
+  <a href="#" id="a-toggle-chatgpt"><strong>open the assistant</strong></a>
 </div>
+<div id="div-chatgpt-container">
+  <form id="form-openai" action="#"> 
+    <table style="width:100%">
+      <tr>
+        <td>
+          <label for="textarea-openai-message">How can I help you?</label>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <input id="textarea-openai-message", style="width:100%"></textarea>
+        </td>
+      </tr>
+        <td>
+          <label for="textarea-openai-response">Response from ChatGPT</label>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <textarea id="textarea-openai-response", cols=40, rows=5, style="width:100%"></textarea>
+      </tr>
+      <tr>
+        <td>
+          <input id="btn-openai-send" type="button", value="Send">
+        </td>
+      </tr>
+    </table>
+  </form>
+</div>
+
 <!-- script defer src="https://code.jquery.com/jquery-3.5.1.min.js"></script -->
 <script src="{{ 'jquery-3.7.1.min.js' | asset_url }}" defer="defer"></script>
 <script>
+
   var ws = null;
+
   document.addEventListener('DOMContentLoaded', function() {
+    $("#div-chatgpt-container").hide(); 
+    $("#a-toggle-chatgpt").click( function(e) { 
+      e.preventDefault();
+      $("#div-chatgpt-container").toggle(); 
+    }); 
     $("#btn-openai-send").click( function(e) {
       e.preventDefault();
+      const openai_message = $("#textarea-openai-message").val();
       sendMessageWS(e);
+      //openAISendMessage(openai_message);
     });
-    $("#a-toggle-chatgpt").click( function(e) {
-      $("#div-chatgpt-container").show();
-    });
-  });    
+  });
 
 
   function sendMessageWS(e) {
-//      const shop_url = window.Shopify.shop;
-      const url = 'ws://a8bc-129-126-14-65.ngrok-free.app/api/openai/send-message-ws';
+      console.log("called sendMessageWS");
+      const url = 'wss://06d8-129-126-14-65.ngrok-free.app/api/openai/send-message-ws';
+//      ws = new WebSocket("ws://localhost/api/openai/send-message-ws");
       ws = new WebSocket(url);
       e.preventDefault();
       var question = $('#textarea-openai-message').val(); 
@@ -56,6 +72,7 @@
       });
 
       ws.onopen = function() {
+          console.log('websocket open!');
           ws.send(JSON.stringify(data));
       };
 
@@ -63,6 +80,7 @@
   function onMessageFromServer(e) {
       e.preventDefault();
       if (e.data == "<aitextdone />") {
+          console.log('closing websocket!');
           ws.close();
       } else {
           $("#textarea-openai-response").val( $("#textarea-openai-response").val() +e.data);

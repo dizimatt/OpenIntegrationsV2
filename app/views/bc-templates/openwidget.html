@@ -1,13 +1,15 @@
-<h1>ChatGPT product catalog helper V1.0 - by Open Resourcing</h1>
-<p>I am here to advise you on your query related to our products, please provide me with your question:
-<a href="#" id="a-toggle-chatgpt">view the assistant</a>
-</p>
+<div style="background-color: #ceb0b0;border: 2px solid green; padding: 0px 0px 9px 10px;">
+  <h1 style="margin-top: 0px;">ChatGPT product catalog helper V1.0 - by Open Resourcing</h1>
+  <p>I am here to advise you on your query related to our products<br />
+    please provide me with your question and I will assist you:</p>
+  <a href="#" id="a-toggle-chatgpt"><strong>open the assistant</strong></a>
+</div>
 <div id="div-chatgpt-container">
   <form id="form-openai" action="#"> 
     <table style="width:100%">
       <tr>
         <td>
-          <label for="textarea-openai-message">What is your question?</label>
+          <label for="textarea-openai-message">How can I help you?</label>
         </td>
       </tr>
       <tr>
@@ -16,7 +18,7 @@
         </td>
       </tr>
         <td>
-          <label for="textarea-openai-response">My Response response</label>
+          <label for="textarea-openai-response">Response from ChatGPT</label>
         </td>
       </tr>
       <tr>
@@ -53,7 +55,7 @@
 
   function sendMessageWS(e) {
       console.log("called sendMessageWS");
-      const url = 'wss://e8d3-129-126-14-65.ngrok-free.app/api/openai/send-message-ws';
+      const url = 'wss://d8a7-111-65-60-221.ngrok-free.app/api/openai/send-message-ws';
 //      ws = new WebSocket("ws://localhost/api/openai/send-message-ws");
       ws = new WebSocket(url);
       e.preventDefault();

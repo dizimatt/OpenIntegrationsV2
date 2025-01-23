@@ -12,3 +12,6 @@ still within app folder...
 $ shopify app dev
 
 may need to $ sudo gem install bundler
+
+to deploy the app extension:
+$ shopify app deploy
