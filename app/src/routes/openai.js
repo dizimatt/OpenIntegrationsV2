@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import {MongoClient} from 'mongodb';
+import { Console, log } from "node:console";
 
 var openai = null;
 var aiAssistantID = null;
@@ -7,10 +8,12 @@ var aiThreadID = null;
 export {openai, aiAssistantID, aiThreadID};
 
 export function initOpenAI() {
+    console.log("initOpenAI");
     const myOpenai = new OpenAI({
         baseURL: process.env.OPENAI_BASE_URL
         //apiKey: process.env.OPENAI_API_KEY
     });
+
     return openai = myOpenai;
 };
 
@@ -304,3 +307,96 @@ export async function apiOpenAISendMessageWS(ws, msg_obj) {
   
   }
   
+  export async function apiOllamaSendMessageWS(ws, msg_obj) {
+    console.log("apiOllamaSendMessageWS: sending the question: %s", msg_obj.question);
+    try{
+      const question = msg_obj.question;
+
+      const stream = await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: "I would like you to provide factual answers."
+          },  
+          { role: "user", content: question }],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const message = chunk.choices[0]?.delta?.content || "";
+//        console.log("sending response: %s", message);
+        ws.send(message);
+      };
+
+      const message_status = {
+        content:{
+          run_status:"finished streaming",
+          message_content:"finished streaming the results to the caller"
+        }
+      };
+      console.log("finished streaming the results to the caller. message_status: %o", message_status);
+      return message_status;
+
+    /*
+      // We use the stream SDK helper to create a run with
+      // streaming. The SDK provides helpful event listeners to handle 
+      // the streamed response.
+      const message = await openai.beta.threads.messages.create(
+        aiThreadID,
+        {
+          role: "user",
+          content: question
+        }
+      );
+        
+      let run = openai.beta.threads.runs.stream(aiThreadID, {
+        assistant_id: aiAssistantID
+      })
+      .on('textCreated', (text) => {
+        ws.send('\nassistant > ');
+      })
+      .on('textDelta', (textDelta, snapshot) => {
+        ws.send(textDelta.value);
+      })
+      .on('toolCallCreated', (toolCall) => {
+  //      console.log(`\nassistant > ${toolCall.type}\n\n`);
+        ws.send(`\nassistant > ${toolCall.type}\n\n`);
+      })
+      .on('toolCallDelta', (toolCallDelta, snapshot) => {
+        if (toolCallDelta.type === 'code_interpreter') {
+          if (toolCallDelta.code_interpreter.input) {
+  //          console.log(toolCallDelta.code_interpreter.input);
+            ws.send(toolCallDelta.code_interpreter.input);
+          }
+          if (toolCallDelta.code_interpreter.outputs) {
+            ws.send("output >:");
+            toolCallDelta.code_interpreter.outputs.forEach(output => {
+              if (output.type === "logs") {
+                ws.send(`${output.logs}`);
+              }
+            });
+          }
+        }
+        console.log(`toolCallDelta.type:${toolCallDelta.type}`);
+      })
+      .on('textDone', (content) => {
+  //      console.log("<aitextdone />");
+        ws.send("<aitextdone />");
+      });      
+
+      return {
+        content:{
+          run_status:run.status,
+          message_content:"currently streaming the results to the server logs"
+        }
+      };
+    */
+  
+    } catch (err) {
+      console.log("failed to call sendMessageWS!, %o", err);
+      return "error in sending the message: " + err;
+    };
+  
+  
+  }

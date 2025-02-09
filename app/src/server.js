@@ -20,7 +20,7 @@ import { createHmac } from 'crypto';
 import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
-import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessage, apiOpenAISendMessageWS} from './routes/openai.js';
+import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessageWS, apiOllamaSendMessageWS } from './routes/openai.js';
 import { bigcommerceAuth, bigcommerceLoad, bigcommerceUninstall, bigcommerceRemoveUser, apiBigcommerceInitChatgptWidget, apiBigcommerceUpdateChatgptTemplate} from './routes/bigcommerce.js';
 const app_version = "1.1.2";
 
@@ -204,13 +204,17 @@ app.get('/api/openai/removeassistant', async (req, res) => {
   console.log("route: /api/openai/removeallassistants");
   apiOpenAIRemoveMainAssistant(req, res, dbClient);
 });
+
 app.ws('/api/openai/send-message-ws', async function(ws,req){
   ws.on('message', async function(msg) {
     const msg_obj = JSON.parse(msg);
     try{
-      const returned = await apiOpenAISendMessageWS(ws, msg_obj);
+      // remove below line when wanting to use chatgpt
+      // const returned = await apiOpenAISendMessageWS(ws, msg_obj);
+      const returned = apiOllamaSendMessageWS(ws, msg_obj);
+//      console.log("apiOllamaSendMessageWS returned: %o", returned);
     }catch(e){
-      console.log("failed to call sendMessageStreaming!, %o", e);
+      console.log("failed to call apiOllamaSendMessageWS!, %o", e);
     }
   });
 });
@@ -350,10 +354,12 @@ app.get('/api/bigcommerce/create_widget', async (req, res) => {
 
 app.listen(8000, () => {
     console.log('Server is listening on port 8000');
-
-    //initialising ai - so far the one constant process to be started upon startup
     initOpenAI();
+    //initialising ai - so far the one constant process to be started upon startup
+    // start this up if you want to use ai assistant & threads
+    /*
     createMainAssistant(dbClient);
+    */
 });
 
 // Creating object of key and certificate 
