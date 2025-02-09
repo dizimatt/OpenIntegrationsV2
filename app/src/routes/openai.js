@@ -4,12 +4,11 @@ import {MongoClient} from 'mongodb';
 var openai = null;
 var aiAssistantID = null;
 var aiThreadID = null;
-const assistantName = "Information Assistant-chatgpt";
 export {openai, aiAssistantID, aiThreadID};
 
 export function initOpenAI() {
     const myOpenai = new OpenAI({
-        baseURL: "http://ollama:11434/v1"
+        baseURL: process.env.OPENAI_BASE_URL
         //apiKey: process.env.OPENAI_API_KEY
     });
     return openai = myOpenai;
@@ -88,7 +87,7 @@ async function OpenAICreateMainThread(dbClient){
     const db = dbClient.db('openintegrations');
 
     var myReturn = {}
-    var threadsQuery = {assistant_name: assistantName}
+    var threadsQuery = {assistant_name: process.env.OPENAI_ASSISTANT_NAME}
 
     const aIThread = await db.collection('threads').findOne(threadsQuery);
     if (aIThread){
@@ -98,7 +97,7 @@ async function OpenAICreateMainThread(dbClient){
             const myThread = await openai.beta.threads.create();
             aiThreadID = myThread.id;
             try{
-                myThread.assistant_name = assistantName;
+                myThread.assistant_name = process.env.OPENAI_ASSISTANT_NAME;
                 db.collection('threads').insertOne(myThread);
             } catch (err) {
                 console.log("failed to insert aithread object into collection!, %o", err);
@@ -109,7 +108,7 @@ async function OpenAICreateMainThread(dbClient){
         }
     }
 
-    return myReturn;
+    return aiThreadID;
 }
 
 async function OpenAIRemoveMainAssistant(dbClient){
@@ -170,11 +169,13 @@ export async function createMainAssistant(dbClient){
     const db = dbClient.db('openintegrations');
 
     console.log("createMainAssistant: fetching/creating main assistant, will be used for future threads");
-    var assistantsQuery = {name: assistantName}
+    var assistantsQuery = {name: process.env.OPENAI_ASSISTANT_NAME}
     const aIAssistant = await db.collection('assistants').findOne(assistantsQuery);
+
     if (aIAssistant){
         aiAssistantID = aIAssistant.id;
-    } else {
+        await OpenAICreateMainThread(dbClient);
+      } else {
         try{
             //    console.log("vectorStoreId: %s", vectorStoreId);
             const instructions = 
@@ -191,10 +192,10 @@ export async function createMainAssistant(dbClient){
             "the weight of the product is found in the \"weight\" keypair within of the \"variants\" node/s of the product";
         
             const assistant = await openai.beta.assistants.create({
-                name: assistantName,
+                name: process.env.OPENAI_ASSISTANT_NAME,
                 instructions: instructions,
                 tools: [{ type: "file_search" }] ,
-                model: "gpt-4o-mini" /*,
+                model: process.env.OPENAI_MODEL /*,
                 response_format: { 
                     "type": "json_object" 
                 }*/
@@ -205,13 +206,13 @@ export async function createMainAssistant(dbClient){
             } catch (err) {
                 console.log("failed to insert assistant object into collection!, %o", err);                
             }
-        } catch (err) {
+            await OpenAICreateMainThread(dbClient);
+          } catch (err) {
             console.log("failed to execute createMainAssistant!, %o", err);
         };
     }
 
-    const aIThreadObj = await OpenAICreateMainThread(dbClient);
-return true;        
+    return aiAssistantID;        
 
 }
 
