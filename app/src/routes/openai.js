@@ -10,8 +10,8 @@ export {openai, aiAssistantID, aiThreadID};
 export function initOpenAI() {
     console.log("initOpenAI");
     const myOpenai = new OpenAI({
-        baseURL: process.env.OPENAI_BASE_URL
-        //apiKey: process.env.OPENAI_API_KEY
+        baseURL: process.env.OPENAI_BASE_URL,
+        apiKey: process.env.OPENAI_API_KEY
     });
 
     return openai = myOpenai;
