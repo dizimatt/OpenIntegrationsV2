@@ -20,8 +20,9 @@ import { createHmac } from 'crypto';
 import fs, { truncate } from 'fs';
 import https from 'https';
 import bodyParser from 'body-parser';
-import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessageWS, apiOllamaSendMessageWS } from './routes/openai.js';
+import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessageWS } from './routes/openai.js';
 import { bigcommerceAuth, bigcommerceLoad, bigcommerceUninstall, bigcommerceRemoveUser, apiBigcommerceInitChatgptWidget, apiBigcommerceUpdateChatgptTemplate} from './routes/bigcommerce.js';
+import { initOllama, apiOllamaTest, apiOllamaSendMessageWS } from './routes/ollama.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";
@@ -210,9 +211,9 @@ app.ws('/api/openai/send-message-ws', async function(ws,req){
     const msg_obj = JSON.parse(msg);
     try{
       // remove below line when wanting to use chatgpt
-      const returned = await apiOpenAISendMessageWS(ws, msg_obj);
-      //const returned = apiOllamaSendMessageWS(ws, msg_obj);
-//      console.log("apiOllamaSendMessageWS returned: %o", returned);
+      //const returned = await apiOpenAISendMessageWS(ws, msg_obj);
+      const returned = apiOllamaSendMessageWS(ws, msg_obj);
+      console.log("apiOllamaSendMessageWS returned: %o", returned);
     }catch(e){
       console.log("failed to call apiOllamaSendMessageWS!, %o", e);
     }
@@ -350,14 +351,19 @@ app.get('/api/bigcommerce/create_widget', async (req, res) => {
   apiBigcommerceCreateWidget(req, res);
 });
 */
-
+app.get('/api/ollama', async (req, res) => {
+  await apiOllamaTest(req, res);
+})
 
 app.listen(8000, () => {
     console.log('Server is listening on port 8000');
-    initOpenAI();
+    initOllama();
+
+
+//    initOpenAI();
     //initialising ai - so far the one constant process to be started upon startup
     // start this up if you want to use ai assistant & threads
-    createMainAssistant(dbClient);
+//    createMainAssistant(dbClient);
 });
 
 // Creating object of key and certificate 
