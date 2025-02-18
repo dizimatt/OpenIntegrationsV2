@@ -5,7 +5,11 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 
-var ollama =  null;
+var ollama = new ChatOllama({
+  baseUrl: "http://ollama:11434",
+  model: "deepseek-r1:1.5b",
+  streaming: true
+});
 
 async function fetchWebContent(url) {
   const { data } = await axios.get(url);
@@ -30,17 +34,19 @@ export async function apiOllamaSendMessageWS(ws, msg_obj) {
     const question = msg_obj.question;
     ws.send("sending the query langchain/ollama, please wait\n");
 
-    const stream = await ollama.stream(
-      [
-        ["human", `based on the following JSON content ${webContent} :  \n. \nquery to answer: "${question}"`]
-      ]
-    );
+    const messages = [
+      ["human", `JSON content representing an array of product information: ${webContent}"`],
+      ["human", `query: "${question}"`]
+    ];
+    const stream = await ollama.batch(messages);
+
+//    const stream = await ollama.stream(messages);
 
     for await (const chunk of stream){
 //      console.log("chunk: %o", chunk);
       ws.send(chunk.content);
     }
-    
+
     ws.send("finished the response\n");
     ws.send("<aitextdone />");
     console.log("sent the aitextdone tag to the client");
