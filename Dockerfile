@@ -12,5 +12,6 @@ EXPOSE 8000
 
 #production: replace CMD with following:
 # CMD ["node", "src/server.js"]
+# CMD ["/bin/bash", "-c", "npm run dev"]
 CMD ["/bin/bash", "-c", "npm install; npm run dev"]
 
