@@ -6,6 +6,7 @@ import * as cheerio from 'cheerio';
 import axios from 'axios';
 
 var ollama = new ChatOllama();
+var webContent = "";
 
 async function fetchWebContent(url) {
   const { data } = await axios.get(url);
@@ -15,26 +16,32 @@ async function fetchWebContent(url) {
 async function fetchWebHTML(url) {
   const { data } = await axios.get(url);
 //  console.log("data (string): %s", JSON.stringify(data) );
-  return JSON.stringify(data.products);
+  return data;
  // Adjust the selector as needed
 }
 
 export async function apiOllamaSendMessageWS(ws, msg_obj) {
-
-  const url = 'https://bushrangerhoney.com.au/products.json';
-  const webContent = await fetchWebHTML(url);
   
   try{
     const query = msg_obj.question;
     ws.send("sending the query langchain/ollama, please wait\n");
 
-    //original directions...
-    const context = {
-      products: [
-        {title: "test title", description: "test description", price: 2.01},
-        {title: "test title 2", description: "test description 2", price: 3.01}
-      ]
-    };
+    const prompt = ChatPromptTemplate.fromMessages([
+      [
+        "system",
+        `You are an expert information gatherer. Format all responses as Human sentances. please only process the "variants" nodes, and also disregard all grams values within the data structure`,
+      ],
+      ["human", `answer question: "{input}" from provided context: {context}.`],
+    ]);
+    const chain = prompt.pipe(ollama);
+
+    const stream = await chain.stream({
+      input: query,
+      context: JSON.stringify(webContent),
+    });
+    
+
+    /*
     const stream = await ollama.stream([
       new HumanMessage({
         content: [
@@ -44,12 +51,12 @@ export async function apiOllamaSendMessageWS(ws, msg_obj) {
           },
           {
             type: "text",
-            text: JSON.stringify(context),
+            text: JSON.stringify(context_data),
           },
         ],
       }),
     ]);
-
+    */
     for await (const chunk of stream){
       ws.send(chunk.content);
     }
@@ -110,7 +117,7 @@ export async function apiOllamaTest(req, res) {
     return;
   }
 }
-export function initOllama() {
+export async function initOllama() {
     console.log("initOllama");
 
     ollama = new ChatOllama({
@@ -122,6 +129,9 @@ export function initOllama() {
       }   
     });
     
+    const url = 'https://bushrangerhoney.com.au/products.json';
+    webContent = await fetchWebHTML(url);
+
     return ollama;
 };
 
