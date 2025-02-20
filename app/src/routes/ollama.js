@@ -5,11 +5,7 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 
-var ollama = new ChatOllama({
-  baseUrl: "http://ollama:11434",
-  model: "deepseek-r1:1.5b",
-  streaming: true
-});
+var ollama = new ChatOllama();
 
 async function fetchWebContent(url) {
   const { data } = await axios.get(url);
@@ -25,29 +21,41 @@ async function fetchWebHTML(url) {
 
 export async function apiOllamaSendMessageWS(ws, msg_obj) {
 
-  
   const url = 'https://bushrangerhoney.com.au/products.json';
   const webContent = await fetchWebHTML(url);
-  const myEscapedJSONString = webContent.replace(/"/g, '\\"');
   
   try{
-    const question = msg_obj.question;
+    const query = msg_obj.question;
     ws.send("sending the query langchain/ollama, please wait\n");
 
-    const messages = [
-      ["human", `JSON content representing an array of product information: ${webContent}"`],
-      ["human", `query: "${question}"`]
-    ];
-    const stream = await ollama.batch(messages);
-
-//    const stream = await ollama.stream(messages);
+    //original directions...
+    const context = {
+      products: [
+        {title: "test title", description: "test description", price: 2.01},
+        {title: "test title 2", description: "test description 2", price: 3.01}
+      ]
+    };
+    const stream = await ollama.stream([
+      new HumanMessage({
+        content: [
+          {
+            type: "text",
+            text: query,
+          },
+          {
+            type: "text",
+            text: JSON.stringify(context),
+          },
+        ],
+      }),
+    ]);
 
     for await (const chunk of stream){
-//      console.log("chunk: %o", chunk);
       ws.send(chunk.content);
     }
+    // end of original directions...
 
-    ws.send("finished the response\n");
+    ws.send("\nfinished the response\n");
     ws.send("<aitextdone />");
     console.log("sent the aitextdone tag to the client");
 
@@ -105,19 +113,15 @@ export async function apiOllamaTest(req, res) {
 export function initOllama() {
     console.log("initOllama");
 
-    ollama = new Ollama({
-      baseUrl: "http://ollama:11434",
-      model: "deepseek-r1:1.5b",
-      streaming: true
-    });
-
-    var chatModel = new ChatOllama({
+    ollama = new ChatOllama({
       baseUrl: "http://ollama:11434", // Default value
       model: "deepseek-r1:1.5b",
-      streaming: true
+      streaming: true,
+      options: {
+        num_ctx: 100000
+      }   
     });
     
-    ollama = chatModel;
     return ollama;
 };
 
