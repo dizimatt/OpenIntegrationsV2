@@ -132,6 +132,14 @@ export async function initOllama() {
     const url = 'https://bushrangerhoney.com.au/products.json';
     webContent = await fetchWebHTML(url);
 
+    webContent.products.forEach(product => {
+      product.price = product.variants[0].price;
+      delete product.variants
+      delete product.images;
+    }, this);
+
+//    console.log("webContent: %o", webContent);
+
     return ollama;
 };
 
