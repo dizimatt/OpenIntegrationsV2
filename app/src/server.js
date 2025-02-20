@@ -22,7 +22,7 @@ import https from 'https';
 import bodyParser from 'body-parser';
 import { initOpenAI,  createMainAssistant, apiOpenAIRemoveMainAssistant, apiOpenAISendMessageWS } from './routes/openai.js';
 import { bigcommerceAuth, bigcommerceLoad, bigcommerceUninstall, bigcommerceRemoveUser, apiBigcommerceInitChatgptWidget, apiBigcommerceUpdateChatgptTemplate} from './routes/bigcommerce.js';
-import { initOllama, apiOllamaTest, apiOllamaSendMessageWS } from './routes/ollama.js';
+import { initOllama,  apiOllamaSendMessageWS } from './routes/ollama.js';
 const app_version = "1.1.2";
 
 //import { generate} from "hmac-auth-express";

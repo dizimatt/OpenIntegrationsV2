@@ -1,18 +1,17 @@
-import { ChatOllama, Ollama } from "@langchain/ollama";
+import { ChatOllama, Ollama, OllamaEmbeddings } from "@langchain/ollama";
 import { HumanMessage } from "@langchain/core/messages";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
-import * as cheerio from 'cheerio';
+import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import {  } from "@langchain/ollama";
+import { TokenTextSplitter } from "langchain/text_splitter";
+
 import axios from 'axios';
 
 var ollama = new ChatOllama();
 var webContent = "";
 
-async function fetchWebContent(url) {
-  const { data } = await axios.get(url);
-  const $ = cheerio.load(data);
-  return $('body').text(); // Adjust the selector as needed
-}
 async function fetchWebHTML(url) {
   const { data } = await axios.get(url);
 //  console.log("data (string): %s", JSON.stringify(data) );
@@ -21,20 +20,47 @@ async function fetchWebHTML(url) {
 }
 
 export async function apiOllamaSendMessageWS(ws, msg_obj) {
-  
   try{
+
+    const loader = new CheerioWebBaseLoader("https://bushrangerhoney.com.au/products.json");
+
+    const docs = await loader.load();
+
+    const textSplitter = new TokenTextSplitter({
+      chunkSize: 2000,
+      chunkOverlap: 20,
+    });
+
+    // Note that this method takes an array of docs
+    const splitDocs = await textSplitter.splitDocuments(docs);
+
+    const vectorstore = await MemoryVectorStore.fromDocuments(
+      splitDocs.slice(0, 10),
+      ollama
+    );
+    console.log("vectorstore: %o", vectorstore);
+    
+    // Only extract from top document
+    const retriever = vectorstore.asRetriever({ k: 1 });
+
+    console.log("retriever: %o", retriever);
+  
+  
+    
     const query = msg_obj.question;
     ws.send("sending the query langchain/ollama, please wait\n");
 
     const prompt = ChatPromptTemplate.fromMessages([
       [
         "system",
-        `You are an expert information gatherer. Format all responses as Human sentances. please only process the "variants" nodes, and also disregard all grams values within the data structure`,
+        `You are an expert extraction algorithm.
+Only extract relevant information from the text.
+If you do not know the value of an attribute asked to extract,
+return null for the attribute's value.`,
       ],
-      ["human", `answer question: "{input}" from provided context: {context}.`],
+      ["user", "contextual information for the query: {context}, question: {input}"],
     ]);
     const chain = prompt.pipe(ollama);
-
     const stream = await chain.stream({
       input: query,
       context: JSON.stringify(webContent),
@@ -87,40 +113,19 @@ export async function apiOllamaSendMessageWS(ws, msg_obj) {
   } 
 }
 
-export async function apiOllamaTest(req, res) {
-  console.log("making first query to ollama - deepseek");
-
-  try{
-    const outputParser = new StringOutputParser();
-
-    var prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are a world class technical documentation writer."],
-      ["user", "what is LangSmith?"],
-    ]);
-
-    var chain = prompt.pipe(chatModel).pipe(outputParser);
-    console.log("created chain from prompt template...");
-
-    var response = await chain.invoke({input:"what is LangSmith?"});
-    console.log("ollama response: %o", response);
-
-    res.json({
-      response
-    });
-    return;
-  } catch (err) {
-    console.log("failed to invoke chain: %o", err);
-    const errMsg = err.message
-    res.json({
-      err:errMsg
-    });
-    return;
-  }
-}
 export async function initOllama() {
     console.log("initOllama");
 
     ollama = new ChatOllama({
+      baseUrl: "http://ollama:11434", // Default value
+      model: "deepseek-r1:1.5b",
+      streaming: true,
+      options: {
+        num_ctx: 100000
+      }   
+    });
+
+    ollama = new OllamaEmbeddings({
       baseUrl: "http://ollama:11434", // Default value
       model: "deepseek-r1:1.5b",
       streaming: true,
