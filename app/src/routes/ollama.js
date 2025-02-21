@@ -1,15 +1,11 @@
 import { ChatOllama, Ollama, OllamaEmbeddings } from "@langchain/ollama";
-import { HumanMessage } from "@langchain/core/messages";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import {  } from "@langchain/ollama";
-import { TokenTextSplitter, RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { RunnableSequence } from "@langchain/core/runnables";
-import { z } from "zod";
-
+import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 import axios from 'axios';
+import { TextLoader } from "langchain/document_loaders/fs/text";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables";
+import { formatDocumentsAsString } from "langchain/util/document";
 
 var ollama = new ChatOllama();
 var webContent = "";
@@ -38,12 +34,13 @@ Only extract relevant information from the text.
 If you do not know the value of an attribute asked to extract,
 return null for the attribute's value.`,
       ],
-      ["user", "contextual information for the query: {context}, question: {input}"],
+//      ["user", "contextual information for the query: {context}, question: {input}"],
+      ["user", "question: {input}"],
     ]);
     const chain = prompt.pipe(ollama);
     const stream = await chain.stream({
       input: query,
-      context: JSON.stringify(webContent),
+//      context: JSON.stringify(webContent),
     });
     
 
@@ -103,16 +100,70 @@ export async function initOllama() {
         num_ctx: 100000
       }   
     });
-/*
-    ollama = new OllamaEmbeddings({
-      baseUrl: "http://ollama:11434", // Default value
-      model: "deepseek-r1:1.5b",
-      streaming: true,
-      options: {
-        num_ctx: 100000
-      }   
+
+
+    try{
+    console.log("loading products.json");
+    const loader = new TextLoader("./products.json");
+    const docs = await loader.load();
+
+    console.log("splitting docs");
+    const textSplitter = new RecursiveCharacterTextSplitter({
+      chunkSize:1000,
+      chunkOverlap:200,
+      separators:["\"id\""]
     });
-*/    
+    const splitDocs = await textSplitter.splitDocuments(docs);
+
+    const embeddings = new OllamaEmbeddings({
+      baseUrl: "http://ollama:11434", // Default value
+      model: "deepseek-r1:1.5b"
+    });
+
+    console.log("creating vector store");
+    const vectorStore = await MemoryVectorStore.fromDocuments(
+      splitDocs, 
+      embeddings,
+      {
+        chunkSize: 5000,
+        chunkOverlap: 200
+      }
+    );
+
+    console.log("creating retriever");
+    const retriever = vectorStore.asRetriever();
+    const prompt = PromptTemplate.fromTemplate(`
+      Answer the question using ONLY the following context.
+      If unsure, say "I don't know".
+      
+      Context:
+      {context}
+
+      Question: {question}
+
+      Anwer:
+    `);
+
+    console.log("creating chain");
+    const chain = RunnableSequence.from([
+      {
+        context: retriever.pipe(formatDocumentsAsString),
+        question: new RunnablePassthrough(),
+      },
+      prompt,
+      ollama
+    ]);
+
+    console.log("invoking chain");
+    const answer = await chain.invoke("how many products are in the catalog?");
+
+    console.log("answer: %s", answer);  
+
+  } catch (err) {
+    console.log("failed to invoke chain: %o", err);
+  }
+
+
     //start of original directions
     const url = 'https://bushrangerhoney.com.au/products.json';
     webContent = await fetchWebHTML(url);
