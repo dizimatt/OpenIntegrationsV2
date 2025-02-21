@@ -5,7 +5,9 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import {  } from "@langchain/ollama";
-import { TokenTextSplitter } from "langchain/text_splitter";
+import { TokenTextSplitter, RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { RunnableSequence } from "@langchain/core/runnables";
+import { z } from "zod";
 
 import axios from 'axios';
 
@@ -22,28 +24,6 @@ async function fetchWebHTML(url) {
 export async function apiOllamaSendMessageWS(ws, msg_obj) {
   try{
 
-    const loader = new CheerioWebBaseLoader("https://bushrangerhoney.com.au/products.json");
-
-    const docs = await loader.load();
-
-    const textSplitter = new TokenTextSplitter({
-      chunkSize: 2000,
-      chunkOverlap: 20,
-    });
-
-    // Note that this method takes an array of docs
-    const splitDocs = await textSplitter.splitDocuments(docs);
-
-    const vectorstore = await MemoryVectorStore.fromDocuments(
-      splitDocs.slice(0, 10),
-      ollama
-    );
-    console.log("vectorstore: %o", vectorstore);
-    
-    // Only extract from top document
-    const retriever = vectorstore.asRetriever({ k: 1 });
-
-    console.log("retriever: %o", retriever);
   
   
     
@@ -115,7 +95,6 @@ return null for the attribute's value.`,
 
 export async function initOllama() {
     console.log("initOllama");
-
     ollama = new ChatOllama({
       baseUrl: "http://ollama:11434", // Default value
       model: "deepseek-r1:1.5b",
@@ -124,7 +103,7 @@ export async function initOllama() {
         num_ctx: 100000
       }   
     });
-
+/*
     ollama = new OllamaEmbeddings({
       baseUrl: "http://ollama:11434", // Default value
       model: "deepseek-r1:1.5b",
@@ -133,7 +112,8 @@ export async function initOllama() {
         num_ctx: 100000
       }   
     });
-    
+*/    
+    //start of original directions
     const url = 'https://bushrangerhoney.com.au/products.json';
     webContent = await fetchWebHTML(url);
 
