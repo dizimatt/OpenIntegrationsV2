@@ -2,10 +2,7 @@ import { ChatOllama, Ollama, OllamaEmbeddings } from "@langchain/ollama";
 import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 import axios from 'axios';
 import { TextLoader } from "langchain/document_loaders/fs/text";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables";
-import { formatDocumentsAsString } from "langchain/util/document";
+
 
 var ollama = new ChatOllama();
 var webContent = "";
@@ -19,47 +16,29 @@ async function fetchWebHTML(url) {
 
 export async function apiOllamaSendMessageWS(ws, msg_obj) {
   try{
+  
+    const loader = new TextLoader("./products.json");
+    const originalDocs = await loader.load();
+    const docs = [originalDocs[0].pageContent];
 
-  
-  
-    
     const query = msg_obj.question;
     ws.send("sending the query langchain/ollama, please wait\n");
 
     const prompt = ChatPromptTemplate.fromMessages([
       [
         "system",
-        `You are an expert extraction algorithm.
-Only extract relevant information from the text.
-If you do not know the value of an attribute asked to extract,
-return null for the attribute's value.`,
+        `You are a helpful assistant.
+        If you do not know the answer of the question asked, please respond with "I don't know".`,
       ],
-//      ["user", "contextual information for the query: {context}, question: {input}"],
-      ["user", "question: {input}"],
+//      ["user", "question: {input}, \n context: {context}, \n\nAnswer"],
+      ["user", "question: {input}, \n\nAnswer"],
     ]);
     const chain = prompt.pipe(ollama);
     const stream = await chain.stream({
       input: query,
-//      context: JSON.stringify(webContent),
+//      context: docs
     });
     
-
-    /*
-    const stream = await ollama.stream([
-      new HumanMessage({
-        content: [
-          {
-            type: "text",
-            text: query,
-          },
-          {
-            type: "text",
-            text: JSON.stringify(context_data),
-          },
-        ],
-      }),
-    ]);
-    */
     for await (const chunk of stream){
       ws.send(chunk.content);
     }
@@ -100,69 +79,6 @@ export async function initOllama() {
         num_ctx: 100000
       }   
     });
-
-
-    try{
-    console.log("loading products.json");
-    const loader = new TextLoader("./products.json");
-    const docs = await loader.load();
-
-    console.log("splitting docs");
-    const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize:1000,
-      chunkOverlap:200,
-      separators:["\"id\""]
-    });
-    const splitDocs = await textSplitter.splitDocuments(docs);
-
-    const embeddings = new OllamaEmbeddings({
-      baseUrl: "http://ollama:11434", // Default value
-      model: "deepseek-r1:1.5b"
-    });
-
-    console.log("creating vector store");
-    const vectorStore = await MemoryVectorStore.fromDocuments(
-      splitDocs, 
-      embeddings,
-      {
-        chunkSize: 5000,
-        chunkOverlap: 200
-      }
-    );
-
-    console.log("creating retriever");
-    const retriever = vectorStore.asRetriever();
-    const prompt = PromptTemplate.fromTemplate(`
-      Answer the question using ONLY the following context.
-      If unsure, say "I don't know".
-      
-      Context:
-      {context}
-
-      Question: {question}
-
-      Anwer:
-    `);
-
-    console.log("creating chain");
-    const chain = RunnableSequence.from([
-      {
-        context: retriever.pipe(formatDocumentsAsString),
-        question: new RunnablePassthrough(),
-      },
-      prompt,
-      ollama
-    ]);
-
-    console.log("invoking chain");
-    const answer = await chain.invoke("how many products are in the catalog?");
-
-    console.log("answer: %s", answer);  
-
-  } catch (err) {
-    console.log("failed to invoke chain: %o", err);
-  }
-
 
     //start of original directions
     const url = 'https://bushrangerhoney.com.au/products.json';
