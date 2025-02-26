@@ -1,7 +1,12 @@
 import { ChatOllama, Ollama, OllamaEmbeddings } from "@langchain/ollama";
 import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
-import axios from 'axios';
+import { NomicEmbeddings } from "@langchain/nomic";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { TextLoader } from "langchain/document_loaders/fs/text";
+import axios from 'axios';
+
+import { Agent } from "praisonai";
+
 
 
 var ollama = new ChatOllama();
@@ -66,6 +71,7 @@ export async function apiOllamaSendMessageWS(ws, msg_obj) {
       }
     };  
 
+
   } 
 }
 
@@ -80,6 +86,7 @@ export async function initOllama() {
       }   
     });
 
+
     //start of original directions
     const url = 'https://bushrangerhoney.com.au/products.json';
     webContent = await fetchWebHTML(url);
@@ -91,6 +98,33 @@ export async function initOllama() {
     }, this);
 
 //    console.log("webContent: %o", webContent);
+
+    const text = JSON.stringify(webContent.products);
+    "LangChain is the framework for building context-aware reasoning applications";
+
+    try{
+      const embeddings = new OllamaEmbeddings({
+        baseUrl: "http://ollama:11434", // Default value
+        model: "mxbai-embed-large:latest",
+      });
+    
+      console.log("setting up vectorstore");
+      const vectorstore = await MemoryVectorStore.fromDocuments(
+        [{ pageContent: text, metadata: {} }],
+        embeddings
+      );
+
+      console.log("setting up retriever");
+      const retriever = vectorstore.asRetriever(1);
+
+      // Retrieve the most similar text
+      console.log("retrieving documents");
+      const retrievedDocuments = await retriever.invoke("how many products in the catalog?");
+      
+      console.log("retrievedDocuments[0].pageContent: %s", retrievedDocuments[0].pageContent);
+    } catch (err) {
+      console.log("failed to invoke retriever: %o", err);
+    }
 
     return ollama;
 };
