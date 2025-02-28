@@ -1,15 +1,31 @@
 import { ChatOllama, Ollama, OllamaEmbeddings } from "@langchain/ollama";
-import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
+import { ChatMessagePromptTemplate, ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 import { NomicEmbeddings } from "@langchain/nomic";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { TextLoader } from "langchain/document_loaders/fs/text";
+//import { TextLoader } from "langchain/document_loaders/fs/text";
+//import { RecursiveCharacterTextSplitter} from "langchain/text_splitter";
 import axios from 'axios';
+
+// 1. Import document loaders for different file formats
+import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
+import { TextLoader } from "langchain/document_loaders/fs/text";
+import { JSONLoader } from "langchain/document_loaders/fs/json";
+
+// 2. Import OpenAI langugage model and other related modules
+import { OpenAI,OpenAIEmbeddings } from "@langchain/openai";
+import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { createRetrievalChain } from "langchain/chains/retrieval";
+import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import { RetrievalQAChain, loadQARefineChain } from "langchain/chains";
 
 import { Agent } from "praisonai";
 
 
 
-var ollama = new ChatOllama();
+var ollama = new Ollama();
+var retrievalChain = null;
+var docs = null;
 var webContent = "";
 
 async function fetchWebHTML(url) {
@@ -22,30 +38,19 @@ async function fetchWebHTML(url) {
 export async function apiOllamaSendMessageWS(ws, msg_obj) {
   try{
   
-    const loader = new TextLoader("./products.json");
-    const originalDocs = await loader.load();
-    const docs = [originalDocs[0].pageContent];
-
     const query = msg_obj.question;
     ws.send("sending the query langchain/ollama, please wait\n");
 
-    const prompt = ChatPromptTemplate.fromMessages([
-      [
-        "system",
-        `You are a helpful assistant.
-        If you do not know the answer of the question asked, please respond with "I don't know".`,
-      ],
-//      ["user", "question: {input}, \n context: {context}, \n\nAnswer"],
-      ["user", "question: {input}, \n\nAnswer"],
-    ]);
-    const chain = prompt.pipe(ollama);
-    const stream = await chain.stream({
-      input: query,
-//      context: docs
+    console.log("invoking the query on the chain");
+    var stream = await retrievalChain.stream({
+      input:query,
+      context:""
     });
-    
     for await (const chunk of stream){
-      ws.send(chunk.content);
+      console.log(chunk);
+      if (chunk.answer) {
+        ws.send(chunk.answer);
+      }
     }
     // end of original directions...
 
@@ -75,53 +80,91 @@ export async function apiOllamaSendMessageWS(ws, msg_obj) {
   } 
 }
 
+function loader() {
+  return new DirectoryLoader("./docs", {
+    ".json": (path) => new JSONLoader(path),
+    ".txt": (path) => new TextLoader(path)
+  });
+}
+function normalizeDocuments(docs) {
+  return docs.map((doc) => {
+    if (typeof doc.pageContent === "string") {
+      return doc.pageContent;
+    } else if (Array.isArray(doc.pageContent)) {
+      return doc.pageContent.join("\n");
+    }
+  });
+}
+
 export async function initOllama() {
     console.log("initOllama");
-    ollama = new ChatOllama({
+    ollama = new Ollama({
       baseUrl: "http://ollama:11434", // Default value
       model: "deepseek-r1:1.5b",
       streaming: true,
       options: {
         num_ctx: 100000
       }   
-    });
-
-
-    //start of original directions
-    const url = 'https://bushrangerhoney.com.au/products.json';
-    webContent = await fetchWebHTML(url);
-
-    webContent.products.forEach(product => {
-      product.price = product.variants[0].price;
-      delete product.variants
-      delete product.images;
-    }, this);
-
-//    console.log("webContent: %o", webContent);
-
-    const text = JSON.stringify(webContent.products);
-    "LangChain is the framework for building context-aware reasoning applications";
+    });    
 
     try{
-      const embeddings = new OllamaEmbeddings({
+      // langchain-local process
+      
+      var ollamaEmbed = new OllamaEmbeddings({
         baseUrl: "http://ollama:11434", // Default value
         model: "mxbai-embed-large:latest",
       });
-    
-      console.log("setting up vectorstore");
+  
+      console.log("Loading docs...")
+      docs = await loader().load();
+//      console.log("docs: %o",docs);
+  
+      /*
+      const chain = new RetrievalQAChain({
+        combineDocumentsChain: loadQARefineChain(ollama),
+        retriever: vectorStore.asRetriever(),
+      });
+      */
+      console.log("loading the memoryvector store with the documents");
       const vectorstore = await MemoryVectorStore.fromDocuments(
-        [{ pageContent: text, metadata: {} }],
-        embeddings
+        docs,
+        ollamaEmbed
       );
-
-      console.log("setting up retriever");
-      const retriever = vectorstore.asRetriever(1);
-
-      // Retrieve the most similar text
-      console.log("retrieving documents");
-      const retrievedDocuments = await retriever.invoke("how many products in the catalog?");
+  
+      // start of trying...
+      console.log("creating message for template");
+  //    const message = ChatMessagePromptTemplate.fromTemplate("Answer the user's question: {input} based on the following context {context}");
+      const message = ChatMessagePromptTemplate.fromTemplate("Answer the user's question: {input}.\n based on the following context {context}.\n if you don't know the answer to the question, please reply with 'I Don\'t know'");
+  
+      console.log("creating chatprompttemplate from message");
+      const promptTemplate = ChatPromptTemplate.fromMessages([
+        ["ai", "You are a helpful assistant."],
+        message,
+      ]);
+  
+  //    const promptTemplate = ChatPromptTemplate.fromTemplate(`Answer the user's question: {input} based on the following context {context}`);
+  
+      console.log("creating combineDocsChain");
+      console.log("prompt.inputVariables: %o", promptTemplate.inputVariables);
+      const combineDocsChain = await createStuffDocumentsChain({
+        llm: ollama,
+        prompt: promptTemplate,
+      });
+  
+      console.log("fetching retriever");
+      const retriever = vectorstore.asRetriever();
       
-      console.log("retrievedDocuments[0].pageContent: %s", retrievedDocuments[0].pageContent);
+      console.log("createing retrievalchain");
+      retrievalChain = await createRetrievalChain({
+        combineDocsChain,
+        retriever,
+      }); 
+
+      console.log("finished initialising the ollama models");
+
+      // end of trying
+          // end of langchain-local process
+
     } catch (err) {
       console.log("failed to invoke retriever: %o", err);
     }
