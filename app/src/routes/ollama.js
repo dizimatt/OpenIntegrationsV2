@@ -1,10 +1,14 @@
 import { ChatOllama, Ollama, OllamaEmbeddings } from "@langchain/ollama";
 import { ChatMessagePromptTemplate, ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
+
 import { NomicEmbeddings } from "@langchain/nomic";
+import { Document } from '@langchain/core/documents';
+
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 //import { TextLoader } from "langchain/document_loaders/fs/text";
-//import { RecursiveCharacterTextSplitter} from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter} from "langchain/text_splitter";
 import axios from 'axios';
+import { readFileSync } from "fs";
 
 // 1. Import document loaders for different file formats
 import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
@@ -14,7 +18,6 @@ import { JSONLoader } from "langchain/document_loaders/fs/json";
 // 2. Import OpenAI langugage model and other related modules
 import { OpenAI,OpenAIEmbeddings } from "@langchain/openai";
 import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { RetrievalQAChain, loadQARefineChain } from "langchain/chains";
@@ -24,9 +27,8 @@ import { Agent } from "praisonai";
 
 
 var ollama = new Ollama();
-var retrievalChain = null;
-var docs = null;
-var webContent = "";
+var ragChain = null;
+var retriever = null;
 
 async function fetchWebHTML(url) {
   const { data } = await axios.get(url);
@@ -41,18 +43,15 @@ export async function apiOllamaSendMessageWS(ws, msg_obj) {
     const query = msg_obj.question;
     ws.send("sending the query langchain/ollama, please wait\n");
 
-    console.log("invoking the query on the chain");
-    var stream = await retrievalChain.stream({
-      input:query,
-      context:""
+    const retrievedDocs = await retriever.invoke("listed products?");
+    const stream = await ragChain.stream({
+      question: query,
+      context: retrievedDocs,
     });
+
     for await (const chunk of stream){
-      console.log(chunk);
-      if (chunk.answer) {
-        ws.send(chunk.answer);
-      }
+      ws.send(chunk);
     }
-    // end of original directions...
 
     ws.send("\nfinished the response\n");
     ws.send("<aitextdone />");
@@ -80,22 +79,6 @@ export async function apiOllamaSendMessageWS(ws, msg_obj) {
   } 
 }
 
-function loader() {
-  return new DirectoryLoader("./docs", {
-    ".json": (path) => new JSONLoader(path),
-    ".txt": (path) => new TextLoader(path)
-  });
-}
-function normalizeDocuments(docs) {
-  return docs.map((doc) => {
-    if (typeof doc.pageContent === "string") {
-      return doc.pageContent;
-    } else if (Array.isArray(doc.pageContent)) {
-      return doc.pageContent.join("\n");
-    }
-  });
-}
-
 export async function initOllama() {
     console.log("initOllama");
     ollama = new Ollama({
@@ -116,49 +99,58 @@ export async function initOllama() {
       });
   
       console.log("Loading docs...")
-      docs = await loader().load();
-//      console.log("docs: %o",docs);
-  
-      /*
-      const chain = new RetrievalQAChain({
-        combineDocumentsChain: loadQARefineChain(ollama),
-        retriever: vectorStore.asRetriever(),
+
+      const data = readFileSync('./products-single.json');
+//      const data = readFileSync('./docs/products.json');
+//      console.log("data: %o",JSON.parse(data));
+
+      const docs = [new Document({pageContent: data, metadata: {}})];
+
+      const textSplitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 10000,
+        chunkOverlap: 200
       });
-      */
+      const splits = await textSplitter.splitDocuments(docs);
+//      console.log("splits: %o",splits);
+
       console.log("loading the memoryvector store with the documents");
       const vectorstore = await MemoryVectorStore.fromDocuments(
-        docs,
+        splits,
         ollamaEmbed
       );
   
-      // start of trying...
-      console.log("creating message for template");
-  //    const message = ChatMessagePromptTemplate.fromTemplate("Answer the user's question: {input} based on the following context {context}");
-      const message = ChatMessagePromptTemplate.fromTemplate("Answer the user's question: {input}.\n based on the following context {context}.\n if you don't know the answer to the question, please reply with 'I Don\'t know'");
+      console.log("fetching retriever");
+      retriever = vectorstore.asRetriever();
+
   
       console.log("creating chatprompttemplate from message");
-      const promptTemplate = ChatPromptTemplate.fromMessages([
-        ["ai", "You are a helpful assistant."],
-        message,
-      ]);
-  
-  //    const promptTemplate = ChatPromptTemplate.fromTemplate(`Answer the user's question: {input} based on the following context {context}`);
+      const promptTemplate = ChatPromptTemplate.fromTemplate(
+        `You are an assistant for question-answering tasks related to Bee Products. Use the following pieces of retrieved context to answer the question. 
+        If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+        The context is JSON-formatted data, each product in the json structure contains variant informatio, which includes price, size and title
+
+        Question: {question}
+        Context: {context}`
+      );
+
   
       console.log("creating combineDocsChain");
       console.log("prompt.inputVariables: %o", promptTemplate.inputVariables);
-      const combineDocsChain = await createStuffDocumentsChain({
+
+      ragChain = await createStuffDocumentsChain({
         llm: ollama,
         prompt: promptTemplate,
       });
+
+      // from here on, queries are carried out by the ui 
   
-      console.log("fetching retriever");
-      const retriever = vectorstore.asRetriever();
-      
+      /*
       console.log("createing retrievalchain");
       retrievalChain = await createRetrievalChain({
         combineDocsChain,
         retriever,
       }); 
+      */
 
       console.log("finished initialising the ollama models");
 
