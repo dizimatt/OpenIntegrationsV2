@@ -107,7 +107,7 @@ export async function initOllama() {
       const docs = [new Document({pageContent: data, metadata: {}})];
 
       const textSplitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 10000,
+        chunkSize: 1000,
         chunkOverlap: 200
       });
       const splits = await textSplitter.splitDocuments(docs);
