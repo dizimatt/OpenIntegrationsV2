@@ -29,6 +29,7 @@ services:
       - ./letsencrypt:/var/www/letsencrypt:rw
     depends_on:
       - node
+      - python
 
   node:
     environment:
@@ -51,6 +52,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.python
+    depends_on:
+      - mongo
 
 volumes:
   mongo-data:
