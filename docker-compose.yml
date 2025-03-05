@@ -37,9 +37,20 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/app
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       - mongo
+
+  python:
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./app/pycode:/usr/src/app
+    build:
+      context: .
+      dockerfile: Dockerfile.python
 
 volumes:
   mongo-data:
