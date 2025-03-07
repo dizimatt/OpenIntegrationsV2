@@ -2,7 +2,7 @@ html
   head
     title= title
   body
-    h1= 'Welcome to Open Integrations Shopify App - shop: ' + shopurl
+    h1= 'Welcome to Open Integrations Shopify App (python) - shop: ' + shopurl
     table
       tr 
         th(style="border-bottom: 2px solid red;") Shopify
@@ -79,7 +79,7 @@ script.
 
   function sendMessageWS(e) {
       console.log("called sendMessageWS");
-      ws = new WebSocket("ws://localhost/api/openai/send-message-ws");
+      ws = new WebSocket("ws://localhost:8080/api/ollama/send-message-ws");
       e.preventDefault();
       var question = $('#textarea-openai-message').val(); 
       var url = "/send-message-ws";

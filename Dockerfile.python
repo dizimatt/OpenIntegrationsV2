@@ -5,10 +5,9 @@ WORKDIR /usr/src/app
 EXPOSE 8030
 
 # COPY requirements.txt ./
-RUN pip install "fastapi[standard]"
+RUN pip install fastapi[standard] langchain-ollama langchain_community langchain_experimental pdfplumber langchain-huggingface faiss-cpu
 
-COPY . .
+# COPY . .
 
-# CMD ["/bin/bash", "-c", "echo 'test'"]
-# CMD ["/bin/bash", "-c", "fastapi dev ./main.py --port 8030 --host 127.0.0.1" ]
-CMD ["/bin/bash", "-c", "python ./main.py > log.out" ]
+CMD ["/bin/bash", "-c", "fastapi dev ./main.py --port 8080 --host 0.0.0.0 > log.out" ]
+# CMD ["/bin/bash", "-c", "python ./main.py > log.out" ]
